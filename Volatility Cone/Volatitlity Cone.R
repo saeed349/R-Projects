@@ -75,4 +75,7 @@ melted_cone=melt(vol_cone,id.vars ="Days_till_Expiry")
 
 # ggplot(data=vol_cone,aes(x=duatation))
 ggplot(data=melted_cone, aes(x=Days_till_Expiry, y=value, group=variable)) + geom_line()
-
+# 
+# This brings the option chain with the dates
+# library(flipsideR)
+# AAPL = getOptionChain('AAPL') 
