@@ -1,15 +1,17 @@
 
 
-cone_call<-function()
+cone_call<-function(symbol)
 {
   library(quantmod)
   library(reshape2)
   library(ggplot2)
+  library(flipsideR) #library to get the option chain
+  symbol="TSLA"
   getSymbols("EBAY",from = as.Date("2016-01-01"), to = as.Date("2017-02-01"))
   
   time_friday=options.expiry(EBAY)
   
-  stock<<-EBAY[,6];
+  stock<<-stock[,6];
   
   # spReturns = diff(log(stock_data))
   # stdev=sd(coredata(spReturns))
@@ -43,9 +45,6 @@ cone_call<-function()
         temp.price=stock[(i-n):i]
         temp.ret <- diff(log(temp.price), lag = 1)
         temp.ret <- temp.ret[-1]
-        # print(sd(temp.ret)*sqrt(252))
-        # print(i)
-        print("----")
         temp.ann_vol=append(temp.ann_vol,sd(temp.ret)*sqrt(252))
       }
     }
@@ -54,33 +53,29 @@ cone_call<-function()
     temp.min=append(temp.min,(min(temp.ann_vol)*100))
     temp.mean=append(temp.mean,(mean(temp.ann_vol)*100))
     temp.stdev=sd(temp.ann_vol)
-    print((tail(temp.mean,1)))
-    print("-----")
+    # print((tail(temp.mean,1)))
+    # print("-----")
     temp.1sd.upper=append(temp.1sd.upper,((tail(temp.mean,1))+(temp.stdev*100)))
     temp.1sd.lower=append(temp.1sd.lower,((tail(temp.mean,1))-(temp.stdev*100)))
     temp.2sd.upper=append(temp.2sd.upper,((tail(temp.mean,1))+(2*temp.stdev*100)))
     temp.2sd.lower=append(temp.2sd.lower,((tail(temp.mean,1))-(2*temp.stdev*100)))
   }
-  
-  
-  # temp.1sd.lower=temp.1sd.lower[!is.na(temp.1sd.lower)]
-  
-  
   vol_cone=data.frame(duration,temp.max,temp.min,temp.mean,temp.1sd.lower,temp.1sd.upper
                       ,temp.2sd.lower,temp.2sd.upper)
-  
   names(vol_cone)=c('Days_till_Expiry','Max','Min','Mean','first_sd_lower','first_sd_upper',
                     'second_sd_lower','second_sd_upper')
-  
   na.omit(vol_cone)
-  
+  # for plotting in ggplot, making it into a single column frame
   melted_cone=melt(vol_cone,id.vars ="Days_till_Expiry")
-  
+
   # ggplot(data=vol_cone,aes(x=duatation))
   ggplot(data=melted_cone, aes(x=Days_till_Expiry, y=value, group=variable)) + geom_line()
   # 
   # This brings the option chain with the dates
   # library(flipsideR)
-  # AAPL = getOptionChain('AAPL') 
-  return(vol_cone)
+  # AAPL = getOptionChain('AAPL')
+  
+  
+  
+  # return(vol_cone)
 }
