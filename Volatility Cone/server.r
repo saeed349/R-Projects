@@ -29,6 +29,7 @@ shinyServer(
 function(input,output,session)
 {
   output$myPlot <- reactivePlot(function() { 
+    security_name<-input$Stock
     plot.new()
     plot.window(xlim=c(0,100), ylim = c(-60,100))
     axis(1)
@@ -37,8 +38,7 @@ function(input,output,session)
     title(xlab="Time till expiry")
     title(ylab="Volatility")
     # box()
-    df<-cone_call()
-    x=1:10
+    df<-cone_call(security_name)
     # points(dat$Year, dat$Total, col="red")
     points(50,50,col="red")
     lines(df$Max,col="red")
@@ -48,8 +48,12 @@ function(input,output,session)
     lines(df$second_sd_lower,col="cyan")
     lines(df$second_sd_upper,col="black")
     
-    # lines(df$Min,col="blue")
-    # if (input$RC) {   lines(dat$Year, dat$dat)}
+    #Stupid move
+    # melted_cone=cone_call("TSLA")
+    # nPlot(value ~ Days_till_Expiry, group =  'variable', data = melted_cone, 
+    #                         type = 'lineChart', id = 'chart')
+    lines(df$Min,col="blue")
+    if (input$RC) {   lines(dat$Year, dat$dat)}
   })
 }
 )

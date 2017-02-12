@@ -1,17 +1,24 @@
-
-
 cone_call<-function(symbol)
 {
   library(quantmod)
   library(reshape2)
   library(ggplot2)
   library(flipsideR) #library to get the option chain
-  symbol="TSLA"
-  getSymbols("EBAY",from = as.Date("2016-01-01"), to = as.Date("2017-02-01"))
+  library(zoo)
+  library(xts)
+  library(fOptions)
+  library(rCharts) #to plot the nvd3 plot
   
-  time_friday=options.expiry(EBAY)
+  symbol="AAPL"
+  # dataEnv<-new.env()
+  # getSymbols(toString(symbol_name),env=dataEnv,from = as.Date("2016-01-01"), to = as.Date("2017-02-01"))
   
-  stock<<-stock[,6];
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2016-01-01"), env = NULL))
+  
+  # stock=(getSymbols(toString(symbol_name),from = as.Date("2016-01-01"), to = as.Date("2017-02-01")))
+  time_friday=options.expiry(as.xts(stock_df))
+  
+  stock=stock_df[,6];
   
   # spReturns = diff(log(stock_data))
   # stdev=sd(coredata(spReturns))
@@ -34,7 +41,7 @@ cone_call<-function(symbol)
   temp.2sd.lower={}
   
   
-  duration=seq(90,1,-1)
+  duration=seq(150,1,-1)
   for(n in duration)
   {
     temp.ann_vol={}
@@ -67,15 +74,146 @@ cone_call<-function(symbol)
   na.omit(vol_cone)
   # for plotting in ggplot, making it into a single column frame
   melted_cone=melt(vol_cone,id.vars ="Days_till_Expiry")
+  print(melted_cone)
 
   # ggplot(data=vol_cone,aes(x=duatation))
   ggplot(data=melted_cone, aes(x=Days_till_Expiry, y=value, group=variable)) + geom_line()
   # 
   # This brings the option chain with the dates
   # library(flipsideR)
-  # AAPL = getOptionChain('AAPL')
+  # symbol="AAPL"
+  option_chain = getOptionChain(symbol)
+  head(option_chain)
   
+  option_chain$days_till_expiry=as.Date(option_chain$expiry)-Sys.Date()
   
-  
+  libor=1.70511/100
+                                          # GBSVolatility(option_price_P100[i], TypeFlag = "p", S = stock_price[i], X =105,
+                                          #               Time = (as.numeric(expiry_date-date[i],units="days"))/365, 
+                                          #               r = libor[i]/100, b=0, maxiter = 10000)
+                                          # 
+  # option_chain$impl_vol=GBSVolatility(option_chain$premium, TypeFlag = ifelse((option_chain$type=="Call"), "c", "p"), 
+  #                                     S = as.numeric(tail(stock_df,1)[6]), X =option_chain$strike, Time = as.numeric(option_chain$days_till_expiry)/365,
+  #                                     r = libor, b=0, maxiter = 1000)
+  # 
+  x=GBSVolatility(20, TypeFlag ="c",S = 100, X =90, Time = 60/365,
+                  r = libor, b=0, maxiter = 10000)
   # return(vol_cone)
+  
+  ##to remove the column name and use it as index, I don't know why I have removed it
+  # rownames(vol_cone) <- vol_cone$Days_till_Expiry
+  # vol_cone$Days_till_Expiry<-NULL
+  return(vol_cone)
 }
+
+
+# p8 <- nPlot(value ~ Days_till_Expiry, group =  'variable', data = melted_cone, 
+#             type = 'stackedAreaChart', id = 'chart'
+# )
+
+
+# p9 <- nPlot(value ~ Days_till_Expiry, group =  'variable', data = melted_cone, 
+#             type = 'lineChart', id = 'chart'
+# )
+
+# p9$xAxis(axisLabel='Number of days till expiry')
+# p9$yAxis(axisLabel='Volatility')
+melted_cone$Days_till_Expiry=as.numeric(melted_cone$Days_till_Expiry)
+melted_cone$value=as.numeric(melted_cone$value)
+
+melted_cone[complete.cases(melted_cone),]
+melted_cone=x
+
+# datm <- transform(melted_cone,  Days_till_Expiry= to_jsdate(Days_till_Expiry))
+# melted_cone$Days_till_Expiry <- as.double(as.POSIXct(as.Date(melted_cone$Days_till_Expiry),origin="1970-01-01"))
+
+# Not working
+melted_cone$Days_till_Expiry<-as.Date(as.Date(Sys.Date())
+                                      +as.integer(melted_cone$Days_till_Expiry))
+
+melted_cone$Days_till_Expiry <- as.double(as.POSIXct(as.Date(melted_cone$Days_till_Expiry), origin="1970-01-01"))
+ 
+
+
+to_jsdate <- function(date_){
+  val = as.POSIXct(as.Date(date_), origin="1970-01-01")
+  as.numeric(val)
+}
+
+# test_df=melted_cone
+test_df = reshape2::melt(
+  vol_cone[,c('Days_till_Expiry','Max','Min')],
+  id = 'Days_till_Expiry'
+)
+# do.call(rbind.data.frame, test_df)
+test_df$Days_till_Expiry<-as.Date(as.Date(Sys.Date())
+                                      +as.integer(test_df$Days_till_Expiry))
+test_df <- transform(test_df, Days_till_Expiry = to_jsdate(Days_till_Expiry))
+# test_df$Days_till_Expiry <- as.double(as.POSIXct(as.Date(test_df$Days_till_Expiry), origin="1970-01-01"))
+test_df=test_df[1:20,]
+
+
+
+# df <- data.frame(matrix(unlist(melted_cone)),stringsAsFactors=FALSE)
+# do.call(rbind.data.frame, test)
+
+p6 <- Rickshaw$new()
+p6$layer(value ~ Days_till_Expiry,group = 'variable', data = test_df, type = 'line', 
+         colors = c("darkred", "darkslategrey"))
+p6$set(slider = TRUE)
+p6
+
+p3$set(
+  xAxis = FALSE,
+  yAxis = FALSE,
+  shelving = FALSE,
+  legend = FALSE,
+  slider = FALSE,
+  highlight = FALSE
+)
+p3$show('iframesrc',cdn=TRUE)
+
+
+# This works
+
+r1<-rPlot(value ~ Days_till_Expiry, data = melted_cone,
+          color = 'variable',type = 'line')
+
+# r1$guides(x = list(title = "", ticks = unique(melted_cone$Days_till_Expiry)))
+# r1$guides(y = list(title = "", max = 18))
+
+
+# p12 <- nPlot(value ~ Days_till_Expiry, group = 'variable', data = test_df
+#              , type = 'multiChart')
+# p12$set(multi = list(
+#   Max= list(type="line", yAxis=1),
+#   Min = list(type="line", yAxis=2)
+# ))
+# p12$setTemplate(script = system.file(
+#   "/libraries/nvd3/layouts/multiChart.html",
+#   package = "rCharts"
+# ))
+# p12
+# 
+# h12 <- hPlot(value ~ Days_till_Expiry, group = 'variable', data = test_df
+#              , type = 'multiChart')
+# p12
+test_df<-vol_cone
+test_df$spot[test_df$Days_till_Expiry==10]=50
+test_df$spot2[test_df$Days_till_Expiry==100]=25
+
+
+test_df_melted=melt(test_df,id.vars ="Days_till_Expiry")
+
+
+#the highchart works
+
+h1=hPlot(value ~ Days_till_Expiry, data =test_df_melted, type ='line', 
+      group = 'variable')
+
+h1$legend(enabled=FALSE)
+
+n1=nPlot(value ~ Days_till_Expiry, group =  'variable', data = test_df_melted, 
+                       type = 'lineChart', id = 'chart')
+
+n1$chart(showLegend=FALSE)
