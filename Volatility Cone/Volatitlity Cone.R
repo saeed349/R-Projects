@@ -91,10 +91,53 @@ cone_call<-function(symbol)
                                           # GBSVolatility(option_price_P100[i], TypeFlag = "p", S = stock_price[i], X =105,
                                           #               Time = (as.numeric(expiry_date-date[i],units="days"))/365, 
                                           #               r = libor[i]/100, b=0, maxiter = 10000)
-                                          # 
-  # option_chain$impl_vol=GBSVolatility(option_chain$premium, TypeFlag = ifelse((option_chain$type=="Call"), "c", "p"), 
-  #                                     S = as.numeric(tail(stock_df,1)[6]), X =option_chain$strike, Time = as.numeric(option_chain$days_till_expiry)/365,
-  #                                     r = libor, b=0, maxiter = 1000)
+
+  test_iv=GBSVolatility(option_chain$premium[3],
+                        TypeFlag = ifelse((option_chain$type[3]=="Call"), "c", "p"),
+                        S = as.numeric(tail(stock_df,1)[6]), 
+                        X =option_chain$strike[3],
+                        Time = as.numeric(option_chain$days_till_expiry[3])/365,
+                        r = libor, b=0, maxiter = 1000)
+  iv={}
+  optionName={}
+  days_till_expiry={}
+  for (i in 1:nrow(option_chain)) 
+  {
+    if(as.numeric(option_chain[i,"days_till_expiry"])<120)
+    {
+      iv=append(iv,100*GBSVolatility(option_chain[i,"premium"],
+                                     TypeFlag = ifelse((option_chain[i,"type"]=="Call"), "c", "p"),
+                                     S = as.numeric(tail(stock_df,1)[6]), 
+                                     X =option_chain[i,"strike"],
+                                     Time = as.numeric(option_chain[i,"days_till_expiry"])/365,
+                                     r = libor, b=0, maxiter = 1000))
+      optionName=append(optionName,paste(option_chain[i,"strike"],"-",
+                                         option_chain[i,"type"],"Expiring On:",
+                                         option_chain[i,"expiry"]))
+      days_till_expiry=append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+    }
+    
+    
+  }
+  
+  option_chain_df=data.frame(days_till_expiry,optionName,iv)
+  names(option_chain_df)<-c("Days_till_Expiry","variable","value")
+  
+  
+  melted_cone=melt(vol_cone,id.vars ="Days_till_Expiry")
+  
+  # for some reason apply is not working
+  # df={}
+  # f<-function(x)
+  # {
+  #   print(GBSVolatility(x[5],TypeFlag = ifelse((x[2]=="Call"), "c", "p"),
+  #                    S = as.numeric(tail(stock_df,1)[6]), X =x[4], 
+  #                    Time = as.numeric(x[11])/365,
+  #                    r = libor, b=0, maxiter = 1000))
+  # }
+  # 
+  # apply(option_chain,1,f)
+  
   # 
   x=GBSVolatility(20, TypeFlag ="c",S = 100, X =90, Time = 60/365,
                   r = libor, b=0, maxiter = 10000)
@@ -205,15 +248,29 @@ test_df$spot2[test_df$Days_till_Expiry==100]=25
 
 test_df_melted=melt(test_df,id.vars ="Days_till_Expiry")
 
-
+#-----------------------------------
 #the highchart works
 
 h1=hPlot(value ~ Days_till_Expiry, data =test_df_melted, type ='line', 
       group = 'variable')
 
 h1$legend(enabled=FALSE)
+#-----------------------------------
 
 n1=nPlot(value ~ Days_till_Expiry, group =  'variable', data = test_df_melted, 
                        type = 'lineChart', id = 'chart')
 
 n1$chart(showLegend=FALSE)
+#=================================
+
+do.call(rbind.data.frame, option_chain_df)
+do.call(rbind.data.frame, melted_cone)
+
+test_df=merge(melted_cone,option_chain_df,all=TRUE)
+
+h1=hPlot(value ~ Days_till_Expiry, data =test_df, type ='line', 
+         group = 'variable')
+
+h1$legend(enabled=FALSE)
+h1
+
