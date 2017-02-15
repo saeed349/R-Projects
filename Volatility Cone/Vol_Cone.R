@@ -121,7 +121,8 @@ cone_call<-function(symbol)
   
   h1$legend(enabled=FALSE)
   h1$chart(zoomType="x")
-  h1
+  # h1
+  return(test_df)
 }
 
 
@@ -140,3 +141,6 @@ cone_call<-function(symbol)
 #   return(24)
 # }
 # fit
+
+getSymbols("^GSPC", src = "yahoo",
+      from = as.Date("2017-02-04"))
