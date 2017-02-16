@@ -1,10 +1,9 @@
 library(flipsideR) #to get the option-chain from yahoo
-library(quantmod) #to get the stock prices
+library(quantmod)#to get the stock prices
 
 
 # Black sholes pricing forumala
-QuestionA<-function(S, K, t, r, sigma,type)
-{
+QuestionA<-function(S, K, t, r, sigma,type){
   d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
   d2 <- d1 - sigma * sqrt(t)
   if (type == "c")
@@ -31,7 +30,18 @@ QuestionA<-function(S, K, t, r, sigma,type)
 # blackscholes(100,100,.1,1,.25)
 
 
-QuestionA(S=100,K=100,t=30/252,r=.05,sigma=.2,type="c")
+QuestionB(S=100,K=100,t=30/252,r=.05,sigma=.2,type="c")
+
+QuestionB<-function(S, K, t, r, sigma,type){
+  call <- QuestionA(S,K,t,r,sigma,type="c")
+  put <- QuestionA(S,K,t,r,sigma,type="p")
+  
+  print("Call - Put = So - Ke^(rt)")
+  print(paste(call," - ",put, " = ",S," - ",(K*exp(r*t))))
+
+  if(abs((abs(call-put)-abs(S-((K*exp(r*t))))))<.01)
+    print("Put-Call Parity holds")
+}
 
 
 
@@ -39,11 +49,11 @@ QuestionA(S=100,K=100,t=30/252,r=.05,sigma=.2,type="c")
 QuestionC_impliedVol<-function(S, K, t, r, type, option_price,max.iter){
   sigma.mid<- 0.2
   sigma.upper <- 1
-  sigma.lower <- 0.001
+  sigma.lower <- 0.0001
   count <- 0
   error <-QuestionA(S, K, t, r, sigma.mid, type) - option_price  
     
-  while(abs(error) > 0.000001 && count<max.iter){
+  while(abs(error) > 0.0001 && count<max.iter){
     if(error < 0){
       sigma.lower <-sigma.mid
       sigma.mid <- (sigma.upper + sigma.mid)/2
@@ -85,7 +95,8 @@ GBSVolatility(15,"c", S = 134.97, X =120,
 
 QuestionC<-function(symbol){
   stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"), env = NULL))
-  option_chain <- getOptionChain(symbol)
+  option_chain <- flipsideR::getOptionChain(symbol)
+  print(head(option_chain))
   option_chain$days_till_expiry <- as.Date(option_chain$expiry)-Sys.Date()
   libor <-1.70511/100
   iv <- {}
@@ -93,8 +104,8 @@ QuestionC<-function(symbol){
   days_till_expiry <-{}
   for (i in 1:nrow(option_chain)) 
   {
-    if(as.numeric(option_chain[i,"days_till_expiry"])<120)
-    {
+    # if(as.numeric(option_chain[i,"days_till_expiry"])<120)
+    # {
       iv <-append(iv,100*QuestionC_impliedVol(
                         S = as.numeric(tail(stock_df,1)[6]),
                         K = option_chain[i,"strike"],
@@ -103,6 +114,14 @@ QuestionC<-function(symbol){
                      type = ifelse((option_chain[i,"type"]=="Call"), "c", "p"),
              option_price = option_chain[i,"premium"],
                  max.iter = 1000))
+      
+      # iv <-append(iv,100*GBSVolatility(option_chain[i,"premium"],
+      #                                  ifelse((option_chain[i,"type"]=="Call"), "c", "p"), S = as.numeric(tail(stock_df,1)[6]),
+      #                                  X =option_chain[i,"strike"],
+      #                                  Time = as.numeric(option_chain[i,"days_till_expiry"])/252,
+      #                                  r = libor, b=0, maxiter = 1000))
+      
+      
       # function(S, K, T, r, market, type)
       # iv <-append(iv,100*implied.vol(
       #     S = as.numeric(tail(stock_df,1)[6]),
@@ -116,7 +135,7 @@ QuestionC<-function(symbol){
                                          option_chain[i,"type"],"Expiring On:",
                                          option_chain[i,"expiry"]))
       days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
-    }
+    # }
     
     
   }
@@ -154,5 +173,8 @@ QuestionC<-function(symbol){
 #       return(sig)
 #     }
 #   }
+
+
+
 
 
