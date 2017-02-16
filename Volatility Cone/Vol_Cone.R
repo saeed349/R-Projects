@@ -8,8 +8,7 @@ cone_call<-function(symbol)
   library(xts)
   library(fOptions)
   library(rCharts) #to plot the nvd3 plot
-  
-  # symbol="AMZN"
+
   
   stock_df<-as.data.frame(getSymbols(as.character(symbol),from = as.Date("2016-01-01"),env = NULL))
   
@@ -116,31 +115,7 @@ cone_call<-function(symbol)
   
   test_df=merge(melted_cone,option_chain_df,all=TRUE)
   
-  h1=hPlot(value ~ Days_till_Expiry, data =test_df, type ='line', 
-           group = 'variable')
-  
-  h1$legend(enabled=FALSE)
-  h1$chart(zoomType="x")
+  colnames(test_df) <- c("Days_Till_Expiry", "variable", "Implied_Volatility")
   # h1
   return(test_df)
 }
-
-
-# fit = tryCatch(
-#   GBSVolatility(option_chain$premium[3],
-#                         TypeFlag = ifelse((option_chain$type[3]=="Call"), "c", "p"),
-#                         S = 0, 
-#                         X =option_chain$strike[3],
-#                         Time = as.numeric(option_chain$days_till_expiry[3])/365,
-#                         r = libor, b=0, maxiter = 1000))
-
-# if(is(fit, "warning")) {
-#   return(1)
-# } else {
-#   #forecasting 20 days ahead
-#   return(24)
-# }
-# fit
-
-getSymbols("^GSPC", src = "yahoo",
-      from = as.Date("2017-02-04"))

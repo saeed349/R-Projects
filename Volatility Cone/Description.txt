@@ -1,0 +1,9 @@
+The paper that inspired me to plot the volatility cone is
+http://www.m-x.ca/f_publications_en/cone_vol_en.pdf
+
+Rchart package is used for plotting the data, and the option chain and stock data are obtained 
+using quantmod and flipsideR packages. Highcharts, which is built on javascript is used for the plotting.
+
+Implied Volatility is directly proportional to the Option premium and this chart can let the traders
+and analyst visually observe the IV of options with respect to the rolling volatility at different time
+to maturity 
