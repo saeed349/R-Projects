@@ -14,7 +14,7 @@ QuestionA<-function(S, K, t, r, sigma,type){
 }
 
 
-greeks=QuestionF(S=100,K=100,t=2/252,r=.05,sigma=.2,type="c")
+QuestionA(S=100,K=100,t=30/252,r=.05,sigma=.2,type="p")
 
 QuestionB<-function(S, K, t, r, sigma,type){
   call <- QuestionA(S,K,t,r,sigma,type="c")
@@ -29,7 +29,7 @@ QuestionB<-function(S, K, t, r, sigma,type){
 
 
 
-#Calculating the implied volatility
+#incorrect bisection method
 QuestionC_impliedVol<-function(S, K, t, r, type, option_price,max.iter){
   sigma.mid<- 0.2
   sigma.upper <- 1
@@ -62,11 +62,53 @@ QuestionC_impliedVol<-function(S, K, t, r, type, option_price,max.iter){
   }
 }
 
+#correct bisection method -but its not giving me the answer :-(
+QuestionC_impliedVol<-function(S, K, t, r, type, option_price, max.iter)
+{
+  sigma.upper <- 3
+  sigma.lower <- 0.0001
+  sigma.mid <- .5
+  count <- 0
+  fun.mid <- QuestionA(S=S,K=K,t=t,r=r,sigma=sigma.mid,type=type)- option_price
+  
+  while(abs(sigma.mid) > 0.0001 && count<max.iter){
+    
+    fun.upper=QuestionA(S=S,K=K,t=t,r=r,sigma=sigma.upper,type=type)-option_price
+    fun.lower=QuestionA(S=S,K=K,t=t,r=r,sigma=sigma.lower,type=type)-option_price
+    fun.mid=QuestionA(S=S,K=K,t=t,r=r,sigma=sigma.mid,type=type)-option_price
+    
+    # print(paste(fun.upper,fun.mid, fun.lower))
+    
+    # if(count==10)
+    #   break
+    if(fun.mid*fun.lower < 0){
+      sigma.upper <-sigma.mid
+      sigma.mid <- (sigma.upper + sigma.lower)/2
+      # print(paste(sigma.mid,sigma.upper))
+    }else{
+      sigma.lower<- sigma.mid
+      sigma.mid  <- (sigma.lower + sigma.upper)/2
+      # print(paste(sigma.lower,sigma.mid))
+    }
+    count <- count + 1
+  }
+  print(sigma.mid)
+  if(count>=max.iter){
+    return(NA)
+  }else{
+    return(sigma.mid)
+  }
+}
 
+QuestionC_impliedVol(S=100,K=100,t=2/252,r=.05,type="p",option_price = .69100,max.iter =10000)
 
-QuestionC_impliedVol(100,100,1,.1,"c",3.051184,max.iter =10000 )
+QuestionC_impliedVol(135.72,128,5/252,(1.70511/100),"c",7.55,max.iter =100000) #IV=27.25
 
-
+test<-function(sigma)
+{
+  QuestionA(S=135.72,K=128,t=5/252,r=(.70511/100),sigma,type="c")-7.55 
+}
+curve(test)
 
 QuestionC_impliedVol(134.97,120,2/365,(1.70511/100),"c",15,max.iter =100000) #iv shouldbe=72.27
 
@@ -82,7 +124,7 @@ QuestionC<-function(symbol){
   option_chain <- flipsideR::getOptionChain(symbol)
   print(head(option_chain))
   option_chain$days_till_expiry <- as.Date(option_chain$expiry)-Sys.Date()
-  libor <-1.70511/100
+  libor <-.70511/100
   iv <- {}
   optionName <-{}
   strike <-{}
@@ -99,7 +141,7 @@ QuestionC<-function(symbol){
                         r = libor,
                      type = ifelse((option_chain[i,"type"]=="Call"), "c", "p"),
              option_price = option_chain[i,"premium"],
-                 max.iter = 1000))
+                 max.iter = 10000))
       
       # iv <-append(iv,100*GBSVolatility(option_chain[i,"premium"],
       #                                  ifelse((option_chain[i,"type"]=="Call"), "c", "p"), S = as.numeric(tail(stock_df,1)[6]),
@@ -149,27 +191,72 @@ QuestionC<-function(symbol){
 } #testing 
 
 
-
+#1st working
 QuestionD_Secant <- function(S, K, t, r, type, option_price
-                   , x0=0, x1=1, tol=1e-07, maxiter=500){
+                   , x0=0.1, x1=3, tol=1e-07, maxiter=500){
   for ( i in 1:maxiter ) {
-    fun.x1=option_price-QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)#Implied_Vol_function(S, K, t, r, type, option_price,sigma=x1)
-    fun.x0=option_price-QuestionA(S=S,K=K,t=t,r=r,sigma=x0,type=type)#Implied_Vol_function(S, K, t, r, type, option_price,sigma=x0)
-    x2 <- x1-fun.x1*(x1-x0)/(fun.x1-fun.x0)
-    fun.x2=Implied_Vol_function(S, K, t, r, type, option_price,sigma=x2)
+    fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
+    fun.x0=QuestionA(S=S,K=K,t=t,r=r,sigma=x0,type=type)-option_price
+    x2 <- x1-((fun.x1*(x1-x0))/(fun.x1-fun.x0))
+    fun.x2=QuestionA(S=S,K=K,t=t,r=r,sigma=x2,type=type)-option_price
+    print(paste("x2=",x2," fun.x2=",fun.x2))
     if (abs(fun.x2) < tol)
       return(x2)
     x0 <- x1
     x1 <- x2
   }
-  stop("Exceeded Maximum number of iteractions")
-  return(0)
+  # stop("Exceeded Maximum number of iteractions")
+  return(x2)
 }
 
-QuestionD(S=100,K=100,t=30/252,r=.05,type='c',x0=0,x1=1,option_price=3.051184)
-QuestionD(S=134.97,K=120,t=2/365,r=(1.70511/100),type='c',
-       x0=0,x1=1,option_price=15)
+#working 
+QuestionD_Secant <- function(S, K, t, r, type, option_price
+                             , x0=0.1, x1=3, tol=1e-07, max.iter=500){
+  x1=.9
+  theta=.0000001
+  
+  fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
+  print(fun.x1)
+  while(abs(fun.x1) > 0.0001 && count<max.iter) {
+    x2=x1-theta
+    fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
+    fun.x2=QuestionA(S=S,K=K,t=t,r=r,sigma=x2,type=type)-option_price
+    x1 <- x1- fun.x1/((fun.x1-fun.x2)/theta)   
+    print(paste("x1=",x1))
+    # fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
+    # fun.x2=QuestionA(S=S,K=K,t=t,r=r,sigma=x2,type=type)-option_price
+    # print(paste("x2=",x2," fun.x2=",fun.x2))
+    # if (abs(fun.x1) < tol)
+    #   break
+    # x0 <- x1
+    # x1 <- x2
+    count <-count+1
+  }
+  # stop("Exceeded Maximum number of iteractions")
+  return(x2)
+}
 
+
+#Not working 
+QuestionD_Secant <-function(S, K, t, r, type, option_price,
+                          tol=1e-07, maxiter=500){
+  x0=1
+  theta=.1
+  x1=x0-theta
+  for ( i in 1:maxiter ) {
+    fun.x0=QuestionA(S=S,K=K,t=t,r=r,sigma=x0,type=type)
+    fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)
+    dx=(fun.x1-fun.x0)/theta
+    if(abs(dx)<tol)
+      break
+    x0=x0-(option_price-fun.x0)/dx
+  }
+  return(x0)
+}
+
+
+QuestionD_Secant(S=100,K=100,t=30/252,r=.05,type='c',option_price=3.5)
+QuestionD_Secant(S=134.97,K=120,t=30/265,r=(2.7011/100),type='c',option_price=15)
 {
   # secant2 <- function(fun, x0, x1, tol=1e-07, niter=500){
   #   for ( i in 1:niter ) {
@@ -208,29 +295,29 @@ QuestionD<-function(symbol){
   days_till_expiry <-{}
   for (i in 1:nrow(option_chain)) 
   {
-    iv <-append(iv,100*QuestionD_Secant(
-      S = as.numeric(tail(stock_df,1)[6]),
-      K = option_chain[i,"strike"],
-      t = as.numeric(option_chain[i,"days_till_expiry"])/252,
-      r = libor,
-      type = ifelse((option_chain[i,"type"]=="Call"), "c", "p"),
-      option_price = option_chain[i,"premium"]))
-    
-    
-    optionName <- append(optionName,paste(option_chain[i,"strike"],"-",
-                                          option_chain[i,"type"],"Expiring On:",
-                                          option_chain[i,"expiry"]))
-    days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
-
+    try({
+      iv <-append(iv,100*QuestionD_Secant(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = option_chain[i,"strike"],
+        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+        r = libor,
+        type = ifelse((option_chain[i,"type"]=="Call"), "c", "p"),
+        option_price = option_chain[i,"premium"]))
+      
+      
+      optionName <- append(optionName,paste(option_chain[i,"strike"],"-",
+                                            option_chain[i,"type"],"Expiring On:",
+                                            option_chain[i,"expiry"]))
+      days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+    })
   }
   option_chain_df <- data.frame(days_till_expiry,optionName,iv)
   names(option_chain_df)<-c("Days_till_Expiry","variable","value")
   return(option_chain_df)
 }
 
-options_IV=QuestionC("AMZN")
 
-
+options_IV <- y
 #-----
 library(rCharts)
 h1=hPlot(Implied_Volatility ~ strike, data =options_IV, type ='line',
@@ -296,3 +383,5 @@ QuestionF<-function(S, K, t, r, sigma,type)
   return(list(delta,gamma,theta,vega))
 
 }
+
+

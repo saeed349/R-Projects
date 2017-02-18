@@ -1,25 +1,60 @@
+#used first- decided to use .Not working on the given function
 TrapRule = function(a, b, m, f)  # alternate version  #### the one in the fusoi
 {
   h = (b-a)/(m-1)
+  print(h)
   x = seq(from=a, to=b, length=m)
+  print(x)
   y = f(x)
-  h * (0.5*y[1] + sum(y[2:(m-1)]) + (.5*y[m])) #.5 should be multiplied with y[m] ?
+  print(y)
+  z=(h * (0.5*y[1] + sum(y[2:(m-1)]) + (.5*y[m]))) #.5 should be multiplied with y[m] ?
+  print(paste((0.5*y[1]),sum(y[2:(m-1)]), (.5*y[m])))
+  print(z)
+  print("---------")
+  return(z)
 }
 
-# Trapezoid Rule ----
-a =0; b = pi/2; n=12; f = function(x)  {5/(exp(pi)-2) * exp(2*x) * cos(x)}
-table6_5 = matrix(0, nrow=n, ncol=4, dimnames=list(
-  c(1:n), c('m', 'I_2m_(f)', 'E_2m_(f)', 'E_2m_(f)/E_2m-1_(f)')))
-for(i in 1:n) {
-  table6_5[i,1] = ifelse(1 == i, yes=2, no=2*table6_5[i-1,'m']-1)
-  table6_5[i,2] = TrapRule(a, b, table6_5[i,'m'], f) 
-  table6_5[i,3] = 1 - table6_5[i,2]  
-  table6_5[i,4] = ifelse(1 == i, NA, table6_5[i-1,3] /table6_5[i,3] )
+TrapezoidRule = function(a, b, m, f)
+{
+  h = (b-a)/(m-1)
+  theSum = 0.5 * h * (f(a)+f(b)) #why -f(b), shouldnt it be + ?
+  for (i in 1:(m-2)) {
+    ai = a + i*h
+    theSum = theSum + h*f(ai)
+  }
+  theSum
 }
-print(table6_5)
+
+
+f1<-function(x){
+  if(x==0)
+    return(1)
+  else
+    return(sin(x)/x)
+}
+
+f2<-function(x){
+  return(1+(exp(-x)*sin(8*(x^(2/3)))))
+}
+
+# b=10^4; a=-(10^4); n=15
+trap<-function(a,b,n,f)
+{
+  table6_5 = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'I_2m_(f)', 'E_2m_(f)', 'E_2m_(f)/E_2m-1_(f)')))
+  for(i in 1:n) {
+    table6_5[i,1] = ifelse(1 == i, yes=2, no=2*table6_5[i-1,'m']-1)
+    table6_5[i,2] = TrapezoidRule(a, b, table6_5[i,'m'], f) 
+    table6_5[i,3] = pi - table6_5[i,2]  
+    table6_5[i,4] = ifelse(1 == i, NA, table6_5[i-1,3] /table6_5[i,3] )
+  }
+  return(table6_5)
+  
+}
 
 
 
+#professors code
 SimpsonRule = function(a, b, m, f)
 {
   m = m-1
@@ -38,6 +73,7 @@ SimpsonRule = function(a, b, m, f)
   
 }
 
+#working code
 SimpsonRule2= function(a, b, m, f)
 {
   h = (b-a)/(m-1)
@@ -53,14 +89,17 @@ SimpsonRule2= function(a, b, m, f)
   theSum
 }
 
-a =0; b = pi/2; m=125; f = function(x)  {5/(exp(pi)-2) * exp(2*x) * cos(x)}
-table6_5 = matrix(0, nrow=n, ncol=4, dimnames=list(
-  c(1:n), c('m', 'I_2m_(f)', 'E_2m_(f)', 'E_2m_(f)/E_2m-1_(f)')))
-for(i in 1:n) {
-  table6_5[i,1] = ifelse(1 == i, yes=2, no=2*table6_5[i-1,'m']-1)
-  table6_5[i,2] = SimpsonRule2(a, b, table6_5[i,'m'], f)
-  table6_5[i,3] = 1 - table6_5[i,2]  
-  table6_5[i,4] = ifelse(1 == i, NA, table6_5[i-1,3] /table6_5[i,3] )
+simson<-function(a,b,n,f)
+{
+  table6_5 = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'I_2m_(f)', 'E_2m_(f)', 'E_2m_(f)/E_2m-1_(f)')))
+  for(i in 1:n) {
+    table6_5[i,1] = ifelse(1 == i, yes=2, no=2*table6_5[i-1,'m']-1)
+    table6_5[i,2] = SimpsonRule2(a, b, table6_5[i,'m'], f)
+    table6_5[i,3] = 1 - table6_5[i,2]  
+    table6_5[i,4] = ifelse(1 == i, NA, table6_5[i-1,3] /table6_5[i,3] )
+  }
+  return(table6_5)
 }
-print(table6_5)
-table2=table6_5
+
+
