@@ -128,32 +128,33 @@ QuestionC<-function(symbol){
 
 
 
-#1st working
 QuestionD_Secant <- function(S, K, t, r, type, option_price
-                   , x0=0.1, x1=3, tol=1e-07, max.iter=500){
-  for ( i in 1:max.iter ) {
+                             , x0=0.1, x1=3, tol=1e-07, max.iter=10000){
+  x1=3
+  theta=.00001
+  fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
+  count=1
+  start.time <- Sys.time()
+  while(abs(fun.x1) > 0.0001 && count<max.iter) {
+    x2=x1-theta
     fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
-    fun.x0=QuestionA(S=S,K=K,t=t,r=r,sigma=x0,type=type)-option_price
-    x2 <- x1-((fun.x1*(x1-x0))/(fun.x1-fun.x0))
     fun.x2=QuestionA(S=S,K=K,t=t,r=r,sigma=x2,type=type)-option_price
-    print(paste("x2=",x2," fun.x2=",fun.x2))
-    if (abs(fun.x2) < tol)
-      return(x2)
-    x0 <- x1
-    x1 <- x2
+    x1 <- x1- fun.x1/((fun.x1-fun.x2)/theta)   
+    print(paste("x1=",x1))
+    count <-count+1
   }
-  # stop("Exceeded Maximum number of iteractions")
-  return(x2)
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  if(x2<0 || count>=max.iter)
+    return(list(NA,time.taken,count))
+  else
+    return(list(x2,time.taken,count))
 }
 
 
-
-
-
-
+#old one
 QuestionD<-function(symbol){
   stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"), env = NULL))
-  # option_chain <- flipsideR::getOptionChain(symbol)
   option_chain <-option_chain_csv
   
   print(head(option_chain))
@@ -190,10 +191,61 @@ QuestionD<-function(symbol){
   return(option_chain_df)
 }
 
+QuestionD<-function(symbol){
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"), env = NULL))
+  
+  option_chain <-option_chain_csv
+  
+  libor <-.05/100
+  iv <- {}
+  original_iv <-{}
+  optionName <-{}
+  strike <-{}
+  days_till_expiry <-{}
+  time.taken <- 0
+  iterations <- 0
+  for (i in 1:nrow(option_chain)) 
+  {
+    try({
+      secant <- QuestionD_Secant(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(option_chain[i,"Strike"]),
+        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+        r = libor,
+        type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+        option_price = as.numeric(option_chain[i,"premium"]))
+      
+      iv <- append(iv,as.numeric(secant[1]))
+      
+      if(!is.na(secant[1])){
+        time.taken <- as.numeric(secant[2])+time.taken
+        print(paste("count=",secant[3]))
+        iterations <- as.numeric(secant[3])+iterations
+      }
+      
+      
+      strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
+      
+      optionName <- append(optionName,paste(option_chain[i,"Strike"],"-",
+                                            option_chain[i,"Type"],"Expiring On:",
+                                            option_chain[i,"Expiry"]))
+      days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+      
+      original_iv <- append(original_iv,(option_chain[i,"Implied.Volatility"]))
+    })
+  }
+  option_chain_df <- data.frame(days_till_expiry,optionName,iv,strike,original_iv)
+  names(option_chain_df)<-c("Days_till_Expiry","variable","Implied_Volatility","strike","original_iv")
+  time.taken <- time.taken/as.numeric(colSums(!is.na(option_chain_df))[3])
+  iterations <- iterations/as.numeric(colSums(!is.na(option_chain_df))[3])
+  return(list(option_chain_df,time.taken,iterations))
+  # return(option_chain_df)
+}
+
 #MSFT works
 option_chain <- flipsideR::getOptionChain("FB")
   summary(option_chain)
-y=QuestionC("AAPL")
+y=QuestionD("AAPL")
 options_IV <- y[1]
 options_IV <- data.frame(options_IV)
 #-----
