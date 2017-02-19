@@ -204,6 +204,7 @@ QuestionD<-function(symbol){
   days_till_expiry <-{}
   time.taken <- 0
   iterations <- 0
+  type <-{}
   for (i in 1:nrow(option_chain)) 
   {
     try({
@@ -223,6 +224,7 @@ QuestionD<-function(symbol){
         iterations <- as.numeric(secant[3])+iterations
       }
       
+      type <- append(type,as.character(option_chain[i,"Type"]))
       
       strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
       
@@ -234,32 +236,39 @@ QuestionD<-function(symbol){
       original_iv <- append(original_iv,(option_chain[i,"Implied.Volatility"]))
     })
   }
-  option_chain_df <- data.frame(days_till_expiry,optionName,iv,strike,original_iv)
-  names(option_chain_df)<-c("Days_till_Expiry","variable","Implied_Volatility","strike","original_iv")
+  option_chain_df <- data.frame(days_till_expiry,type,optionName,iv,strike,original_iv)
+  names(option_chain_df)<-c("Days_till_Expiry","Type","Specification","Implied_Volatility","strike","original_iv")
   time.taken <- time.taken/as.numeric(colSums(!is.na(option_chain_df))[3])
   iterations <- iterations/as.numeric(colSums(!is.na(option_chain_df))[3])
   return(list(option_chain_df,time.taken,iterations))
   # return(option_chain_df)
 }
 
+
+option_chain_csv <- read.csv(file="put.csv",header=TRUE, sep=",")
+option_chain_csv$days_till_expiry <- as.Date(option_chain_csv$Expiry,"%m/%d/%Y")-Sys.Date()
+
+option_chain_csv$premium<-(option_chain_csv$Bid+option_chain_csv$Ask)/2
+option_chain_csv$Implied.Volatility<- as.numeric(sub("%","",option_chain_csv$Implied.Volatility))
 #MSFT works
-option_chain <- flipsideR::getOptionChain("FB")
-  summary(option_chain)
+
 y=QuestionD("AAPL")
-options_IV <- y[1]
-options_IV <- data.frame(options_IV)
+options.data <- y[1]
+options.data <- data.frame(options.data)
+options.data <- options_IV[complete.cases(options.data$Implied_Volatility),]
 #-----
 library(rCharts)
-h1=hPlot(Implied_Volatility ~ strike, data =options_IV, type ='line',
+h1=hPlot(Implied_Volatility ~ strike, data =options.data, type ='line',
          group = 'Days_till_Expiry')
 # h1$legend(enabled=FALSE)
 h1$chart(zoomType="xy")
 h1
 
-h2=hPlot(Implied.Volatility ~ Strike, data =option_chain_csv, type ='line')
-h2
+h1=hPlot(original_iv ~ strike, data =options.data, type ='line',
+         group = 'Days_till_Expiry')
+h1
 
- #highcharts for 2d plot
+#highcharts for 2d plot
 #----
 library(rgl)
 
@@ -271,16 +280,35 @@ plot3d(x=options_IV$Days_till_Expiry,
 
 #----
 library(plot3D)
-optionsIV <- options_IV[complete.cases(options_IV),]
+x=options.data
+
 library(akima)
-s=interp(optionsIV$Days_till_Expiry,
-         optionsIV$Implied_Volatility,
-         optionsIV$strike)
+s=interp(options.data$Days_till_Expiry,
+         options.data$Implied_Volatility,
+         options.data$strike)
 surface3d(s$x,s$y,s$z)
 #--- Surface plot #3d surface plot
-greeks=QuestionF(S=100,K=100,t=2/252,r=.05,sigma=.2,type="c")
 
-QuestionF<-function(S, K, t, r, sigma,type)
+
+
+#greeks----
+
+greeks=QuestionF_PDE(S=100,K=100,t=2/252,r=.05,sigma=.2,type="c")
+
+greeks
+
+greek=QuestionF_theta(S=100,K=100,t=2/252,r=.05,sigma=.2,type="c")
+
+greek
+
+library(fOptions)
+g <- GBSGreeks(S=100,X=100,Time =2/252,r=.05,sigma=.2,TypeFlag = "Call",b =0)
+g <- GBSGreeks(Selection = "vega",TypeFlag = "c",S = 100,
+          X = 100,Time = 2/365,
+          r = .05, b = 0, sigma = .2)
+g
+
+QuestionF_PDE<-function(S, K, t, r, sigma,type)
 {
  
   d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
@@ -316,10 +344,67 @@ QuestionF<-function(S, K, t, r, sigma,type)
 
 }
 
-option_chain_csv <- read.csv(file="call.csv",header=TRUE, sep=",")
-option_chain_csv$days_till_expiry <- as.Date(option_chain_csv$Expiry,"%m/%d/%Y")-Sys.Date()
 
-option_chain_csv$premium<-(option_chain_csv$Bid+option_chain_csv$Ask)/2
-option_chain_csv$Implied.Volatility<- as.numeric(sub("%","",option_chain_csv$Implied.Volatility))
+
+
+QuestionF_gamma<-function(S, K, t, r, sigma,type)
+{
+  gamma <- (QuestionF_delta(S+1, K, t, r, sigma,type)-QuestionF_delta(S, K, t, r, sigma,type))/10
+}
+
+QuestionF_delta<-function(S, K, t, r, sigma,type)
+{
+  delta <- (QuestionA(S*1.0001, K, t, r, sigma,type)-QuestionA(S, K, t, r, sigma,type))/
+    (S*1.0001-S)
+  return(delta)
+  
+}
+
+QuestionF_vega<-function(S, K, t, r, sigma,type)
+{
+  vega <- (QuestionA(S, K, t, r, sigma*1.01,type)-QuestionA(S, K, t, r, sigma,type))/
+    (sigma*1.01-sigma)
+  return(abs(vega))
+}
+
+#Q-G----
+
+QuestiongG<-function(options.data)
+{
+  # options.data$Delta <-{NA}
+  # options.data$Gamma <-{NA}
+  # options.data$Vega <-{NA}
+  delta <-{}
+  gamma <-{}
+  vega <-{}
+  libor <- .05/100
+  stock_df<-as.data.frame(getSymbols("AAPL",from = as.Date("2017-01-01"), env = NULL))
+  for (i in 1:nrow(options.data)) 
+  {
+
+    greeks<-QuestionF_PDE(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(options.data[i,"strike"]),
+        t = as.numeric(options.data[i,"Days_till_Expiry"])/252,
+        r = libor,
+     type = ifelse((options.data[i,"Type"]=="Call"), "c", "p"),
+    sigma = as.numeric(options.data[i,"Implied_Volatility"]))
+    print(paste("Greeks=",greeks))
+    
+    # options.data$Delta <-append(options.data$Delta,greeks[1])
+    # options.data$Gamma <-append(options.data$Gamma,greeks[2])
+    # options.data$Vega <-append(options.data$Vega,greeks[4])
+    delta <- append(delta, greeks[1])
+    gamma <- append(gamma,greeks[2])
+    vega <- append(vega, greeks[4])
+    
+  }
+  options.data$Delta <-delta
+  options.data$Gamma <-gamma
+  options.data$Vega <-vega
+  return(options.data)
+}
+
+options.data.greeks <- QuestiongG(data.frame(options.data))
 
 
