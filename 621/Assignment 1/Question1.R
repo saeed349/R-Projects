@@ -30,7 +30,7 @@ QuestionB<-function(S, K, t, r, sigma,type){
 
 
 #incorrect bisection method
-QuestionC_impliedVol<-function(S, K, t, r, type, option_price,max.iter){
+QuestionC_impliedVol<-function(S, K, t, r, type, option_price,max.iter=100000){
   sigma.mid<- 0.2
   sigma.upper <- 1
   sigma.lower <- 0.0001
@@ -63,9 +63,9 @@ QuestionC_impliedVol<-function(S, K, t, r, type, option_price,max.iter){
 }
 
 #correct bisection method -but its not giving me the answer :-(
-QuestionC_impliedVol<-function(S, K, t, r, type, option_price, max.iter)
+QuestionC_impliedVol<-function(S, K, t, r, type, option_price, max.iter=10000)
 {
-  sigma.upper <- 3
+  sigma.upper <- 2
   sigma.lower <- 0.0001
   sigma.mid <- .5
   count <- 0
@@ -102,11 +102,12 @@ QuestionC_impliedVol<-function(S, K, t, r, type, option_price, max.iter)
 
 QuestionC_impliedVol(S=100,K=100,t=2/252,r=.05,type="p",option_price = .69100,max.iter =10000)
 
-QuestionC_impliedVol(135.72,128,5/252,(1.70511/100),"c",7.55,max.iter =100000) #IV=27.25
+
+QuestionD_Secant(135.355,140,30/365,(1.70511/100),"c",option_price = .93,max.iter =100000) #real IV=16.94
 
 test<-function(sigma)
 {
-  QuestionA(S=135.72,K=128,t=5/252,r=(.70511/100),sigma,type="c")-7.55 
+  QuestionA(S=135.72,K=128,t=5/252,r=(1.70511/100),sigma,type="c")-7.55 
 }
 curve(test)
 
@@ -115,10 +116,11 @@ QuestionC_impliedVol(134.97,120,2/365,(1.70511/100),"c",15,max.iter =100000) #iv
 library(fOptions)
 
 libor=1.70511/100
-GBSVolatility(15,"c", S = 134.97, X =120,
-                t = 2/365,
+GBSVolatility(.93,"c", S = 135.355, X =140,
+                Time = 30/365,
                 r = libor, b=0, maxiter = 1000)
 
+#Working
 QuestionC<-function(symbol){
   stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"), env = NULL))
   option_chain <- flipsideR::getOptionChain(symbol)
@@ -174,7 +176,45 @@ QuestionC<-function(symbol){
   return(option_chain_df)
 }
 
-
+#done on 2/19/2017
+QuestionC<-function(symbol){
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"), env = NULL))
+  # option_chain <- flipsideR::getOptionChain(symbol)
+  option_chain <-option_chain_csv
+  
+  print(head(option_chain))
+  # option_chain$days_till_expiry <- as.Date(option_chain$expiry)-Sys.Date()
+  libor <-.05/100
+  iv <- {}
+  original_iv <-{}
+  optionName <-{}
+  strike <-{}
+  days_till_expiry <-{}
+  for (i in 1:nrow(option_chain)) 
+  {
+    try({
+      iv <-append(iv,100*QuestionC_impliedVol(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(option_chain[i,"Strike"]),
+        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+        r = libor,
+        type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+        option_price = as.numeric(option_chain[i,"premium"])))
+      
+      strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
+      
+      optionName <- append(optionName,paste(option_chain[i,"Strike"],"-",
+                                            option_chain[i,"Type"],"Expiring On:",
+                                            option_chain[i,"Expiry"]))
+      days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+      
+      original_iv <- append(original_iv,(option_chain[i,"Implied.Volatility"]))
+    })
+  }
+  option_chain_df <- data.frame(days_till_expiry,optionName,iv,strike,original_iv)
+  names(option_chain_df)<-c("Days_till_Expiry","variable","Implied_Volatility","strike","original_iv")
+  return(option_chain_df)
+}
 
 {
   # QuestionD_fun<-function(S,K,t,r,sigma,type='c',option_price){
@@ -193,8 +233,8 @@ QuestionC<-function(symbol){
 
 #1st working
 QuestionD_Secant <- function(S, K, t, r, type, option_price
-                   , x0=0.1, x1=3, tol=1e-07, maxiter=500){
-  for ( i in 1:maxiter ) {
+                   , x0=0.1, x1=3, tol=1e-07, max.iter=500){
+  for ( i in 1:max.iter ) {
     fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
     fun.x0=QuestionA(S=S,K=K,t=t,r=r,sigma=x0,type=type)-option_price
     x2 <- x1-((fun.x1*(x1-x0))/(fun.x1-fun.x0))
@@ -211,12 +251,13 @@ QuestionD_Secant <- function(S, K, t, r, type, option_price
 
 #working 
 QuestionD_Secant <- function(S, K, t, r, type, option_price
-                             , x0=0.1, x1=3, tol=1e-07, max.iter=500){
-  x1=.9
-  theta=.0000001
-  
+                             , x0=0.1, x1=3, tol=1e-07, max.iter=10000){
+  x1=3
+  theta=.00001
+  # fun.x1=1000
   fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
-  print(fun.x1)
+  # print(fun.x1)
+  count=1
   while(abs(fun.x1) > 0.0001 && count<max.iter) {
     x2=x1-theta
     fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
@@ -233,7 +274,10 @@ QuestionD_Secant <- function(S, K, t, r, type, option_price
     count <-count+1
   }
   # stop("Exceeded Maximum number of iteractions")
-  return(x2)
+  if(x2<0 || count>=max.iter)
+    return(NA)
+  else
+    return(x2)
 }
 
 
@@ -255,8 +299,7 @@ QuestionD_Secant <-function(S, K, t, r, type, option_price,
 }
 
 
-QuestionD_Secant(S=100,K=100,t=30/252,r=.05,type='c',option_price=3.5)
-QuestionD_Secant(S=134.97,K=120,t=30/265,r=(2.7011/100),type='c',option_price=15)
+
 {
   # secant2 <- function(fun, x0, x1, tol=1e-07, niter=500){
   #   for ( i in 1:niter ) {
@@ -286,37 +329,47 @@ QuestionD_Secant(S=134.97,K=120,t=30/265,r=(2.7011/100),type='c',option_price=15
 
 QuestionD<-function(symbol){
   stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"), env = NULL))
-  option_chain <- flipsideR::getOptionChain(symbol)
+  # option_chain <- flipsideR::getOptionChain(symbol)
+  option_chain <-option_chain_csv
+  
   print(head(option_chain))
-  option_chain$days_till_expiry <- as.Date(option_chain$expiry)-Sys.Date()
-  libor <-1.70511/100
+  # option_chain$days_till_expiry <- as.Date(option_chain$expiry)-Sys.Date()
+  libor <-.05/100
   iv <- {}
+  original_iv <-{}
   optionName <-{}
+  strike <-{}
   days_till_expiry <-{}
   for (i in 1:nrow(option_chain)) 
   {
     try({
       iv <-append(iv,100*QuestionD_Secant(
         S = as.numeric(tail(stock_df,1)[6]),
-        K = option_chain[i,"strike"],
+        K = as.numeric(option_chain[i,"Strike"]),
         t = as.numeric(option_chain[i,"days_till_expiry"])/252,
         r = libor,
-        type = ifelse((option_chain[i,"type"]=="Call"), "c", "p"),
-        option_price = option_chain[i,"premium"]))
+        type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+        option_price = as.numeric(option_chain[i,"premium"])))
       
+      strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
       
-      optionName <- append(optionName,paste(option_chain[i,"strike"],"-",
-                                            option_chain[i,"type"],"Expiring On:",
-                                            option_chain[i,"expiry"]))
+      optionName <- append(optionName,paste(option_chain[i,"Strike"],"-",
+                                            option_chain[i,"Type"],"Expiring On:",
+                                            option_chain[i,"Expiry"]))
       days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+      
+      original_iv <- append(original_iv,(option_chain[i,"Implied.Volatility"]))
     })
   }
-  option_chain_df <- data.frame(days_till_expiry,optionName,iv)
-  names(option_chain_df)<-c("Days_till_Expiry","variable","value")
+  option_chain_df <- data.frame(days_till_expiry,optionName,iv,strike,original_iv)
+  names(option_chain_df)<-c("Days_till_Expiry","variable","Implied_Volatility","strike","original_iv")
   return(option_chain_df)
 }
 
-
+#MSFT works
+option_chain <- flipsideR::getOptionChain("FB")
+  summary(option_chain)
+y=QuestionC("AAPL")
 options_IV <- y
 #-----
 library(rCharts)
@@ -326,6 +379,8 @@ h1=hPlot(Implied_Volatility ~ strike, data =options_IV, type ='line',
 h1$chart(zoomType="xy")
 h1
 
+h2=hPlot(Implied.Volatility ~ Strike, data =option_chain_csv, type ='line')
+h2
 
  #highcharts for 2d plot
 #----
@@ -383,5 +438,11 @@ QuestionF<-function(S, K, t, r, sigma,type)
   return(list(delta,gamma,theta,vega))
 
 }
+
+option_chain_csv <- read.csv(file="test.csv",header=TRUE, sep=",")
+option_chain_csv$days_till_expiry <- as.Date(option_chain_csv$Expiry)-Sys.Date()
+
+option_chain_csv$premium<-(option_chain_csv$Bid+option_chain_csv$Ask)/2
+option_chain_csv$Implied.Volatility<- as.numeric(sub("%","",option_chain_csv$Implied.Volatility))
 
 
