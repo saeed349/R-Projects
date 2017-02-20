@@ -1,0 +1,227 @@
+---
+title: "621 Assignment1"
+author: "Saeed Rahman"
+date: "February 19, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## QUESTION 2
+
+First function is given as:
+
+```{r}
+f1<-function(x){
+  if(x==0)
+    return(1)
+  else
+    return(sin(x)/x)
+}
+```
+### A)
+Implement the trapezoidal and the Simpson's quadrature rules to numerically
+compute the denite integral above. The algorithms are presented
+in [3], please see Chapter 5. Hint: you can approximate the indenite
+integral by considering a large interval [????a;+a] (for example a = 106).
+Consider equidistant nodes fxngN n=0; i.e., xn = ????a+n2a
+N ; n = 0; 1; : : : ;N,
+where N is a large integer.
+
+### Trapezoid Rule Implementation
+```{r}
+TrapezoidRule = function(a, b, m, f)
+{
+  h = (b-a)/(m-1)
+  Sum = 0.5 * h * (f(a)+f(b))
+  for (i in 1:(m-2)) {
+    ai = a + i*h
+    Sum = Sum + h*f(ai)
+  }
+  return(Sum)
+}
+
+print(TrapezoidRule(b=10^6, a=-(10^6), m=12000,f1))
+```
+### Simpsons Rule Implementation
+```{r}
+SimpsonRule= function(a, b, m, f)
+{
+  h = (b-a)/(m-1)
+  Sum = (1/3) * h * (f(a)+f(b)) 
+  for (i in 1:(m-2)) {
+    if(i%%2 != 0){
+      Sum = Sum + h*f(a + i*h) *(4/3)
+    }else{
+      Sum = Sum + h*f(a + i*h) *(2/3)
+    }
+  }
+  return(Sum)
+}
+print(SimpsonRule(a=-(10^6),b=10^6, m=12000,f1))
+```
+### B)
+Compute the truncation error for the numerical algorithms implemented
+in a) for a particular a 2 R and N 2 N. That is create a function of a
+and N that will output IN ???? , where IN;a is the numerical approximation
+of the integral. Study the changes in the approximation as N and a
+increase as well as the dierence between the two quadrature approximations.
+Please write your observations.
+```{r}
+Trapezoidal_Integration<-function(a,b,n,f)
+{
+  table = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'Integration Result', 'Error', 'Error Ratio')))
+  for(i in 1:n) {
+    table[i,1] = ifelse(1 == i, yes=2, no=2*table[i-1,'m']-1)
+    table[i,2] = TrapezoidRule(a, b, table[i,'m'], f) 
+    table[i,3] = abs(table[i,2] - pi )
+    table[i,4] = ifelse(1 == i, NA, table[i-1,3] /table[i,3] )
+  }
+  return(table)
+}
+Trapezoidal_Integration(a=-(10^6),b=10^6, n=24,f1)
+```
+```{r}
+Simpson_Integration<-function(a,b,n,f)
+{
+  table = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'Integration Result', 'Error', 'Error Ratio')))
+  for(i in 1:n) {
+    table[i,1] = ifelse(1 == i, yes=2, no=2*table[i-1,'m']-1)
+    table[i,2] = SimpsonRule(a, b, table[i,'m'], f1)
+    table[i,3] = abs(table[i,2]- pi )
+    table[i,4] = ifelse(1 == i, NA, table[i-1,3] /table[i,3] )
+  }
+  return(table)
+}
+
+Simpson_Integration(a=-(10^5),b=10^5, n=20,f1)
+
+```
+From observing the convergence characterstics, it seems like that the Simpsons method get conveged at lower values of n compared to trapezoidal
+
+## C)
+In a typical scenario we do not know the true value of the integral. Thus,
+to ensure the convergence of the numerical algorithms we pick a small
+tolerance value " and we check at every iteration k = 1; 2; : : : if the
+following condition holds:
+jIk ???? Ik????1j < ";
+where Ik is the value of the integral at step k. When the condition holds,
+the algorithm stops. Evaluate the number of steps until the algorithms
+from a) reach convergence for " = 10????4. What do you observe?
+
+```{r}
+
+Trapezoidal_Integration_tol<-function(a,b,n,f,tolerance=(10^-4))
+{
+  table = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'Integration Result', 'Error', 'Error Ratio')))
+  for(i in 1:n) {
+    table[i,1] = ifelse(1 == i, yes=2, no=2*table[i-1,'m']-1)
+    table[i,2] = TrapezoidRule(a, b, table[i,'m'], f) 
+    table[i,3] = abs(table[i,2]-pi) 
+    table[i,4] = ifelse(1 == i, NA, table[i-1,3] /table[i,3] )
+    if(table[i,3] < tolerance  && table[i,1]>2){
+      print(table[i,])
+      print(paste("Number of Iterations=",i))
+      break
+  }
+  }
+}
+```
+```{r}
+#Simpson_Integration_tol<-function(a,b,n,f,tolerance=(10^-4))
+# {
+#   table = matrix(0, nrow=n, ncol=4, dimnames=list(
+#     c(1:n), c('m', 'Integration Result', 'Error', 'Error Ratio')))
+#   for(i in 1:n) {
+#     table[i,1] = ifelse(1 == i, yes=2, no=2*table[i-1,'m']-1)
+#     table[i,2] = SimpsonRule(a, b, table[i,'m'], f1)
+#     table[i,3] = abs(table[i,2]- pi)  
+#     table[i,4] = ifelse(1 == i, NA, table[i-1,3] /table[i,3] )
+#     if(table[i,3]<tolerance && table[i,1]>2)
+#       return(table[i,])
+#   }
+#   # return(tail(table,1))
+# 
+Simpson_Integration_tol<-function(a,b,n,f,tolerance=(10^-4))
+{
+  table = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'Integration Result', 'Error', 'Error Ratio')))
+  for(i in 1:n) {
+    table[i,1] = ifelse(1 == i, yes=2, no=2*table[i-1,'m']-1)
+    table[i,2] = SimpsonRule(a, b, table[i,'m'], f1)
+    table[i,3] = abs(table[i,2]- pi) 
+    table[i,4] = ifelse(1 == i, NA, table[i-1,3] /table[i,3] )
+    if(table[i,3] < tolerance  && table[i,1]>2){
+      print(table[i,])
+      print(paste("Number of Iterations=",i))
+      break
+    }
+      
+  }
+}
+```
+
+```{r}
+Trapezoidal_Integration_tol(a=-(10^6),b=10^6, n=24,f1) 
+Simpson_Integration_tol(a=-(10^6),b=10^6, n=24,f1)
+```
+
+From the above analysis we can observe that if the range of integration is large, then Trapezoidal rule is better than Simpsons, whele if it is a small range then Simpsons converge faster in minimum number of steps
+
+## D)
+
+
+```{r}
+f2<-function(x){
+  return(1+(exp(-x)*sin(8*(x^(2/3)))))
+}
+```
+
+```{r}
+
+Trapezoidal_Integration_f2<-function(a,b,n,f,tolerance=(10^-4))
+{
+  table = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'Integration Result', 'Error', 'Error Ratio')))
+  for(i in 1:n) {
+    table[i,1] = ifelse(1 == i, yes=2, no=2*table[i-1,'m']-1)
+    table[i,2] = TrapezoidRule(a, b, table[i,'m'], f) 
+    table[i,3] = abs(table[i,2]-2)
+    table[i,4] = ifelse(1 == i, NA, table[i-1,3] /table[i,3] )
+    if(table[i,3] < tolerance){
+      print(table[i,])
+      print(paste("Number of Iterations=",i))
+      break
+    }
+  }
+}
+
+Simpson_Integration_f2<-function(a,b,n,f,tolerance=(10^-4))
+{
+  table = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'Integration Result', 'Error', 'Error Ratio')))
+  for(i in 1:n) {
+    table[i,1] = ifelse(1 == i, yes=2, no=2*table[i-1,'m']-1)
+    table[i,2] = SimpsonRule(a, b, table[i,'m'], f1)
+    table[i,3] = abs(table[i,2]- 2)
+    table[i,4] = ifelse(1 == i, NA, table[i-1,3] /table[i,3] )
+    if(table[i,3] < tolerance){
+      print(table[i,])
+      print(paste("Number of Iterations=",i))
+      break
+    }
+  }
+}
+
+```
+
+```{r}
+
+TrapezoidRule(a=0,b=2, m=20000,f2)
+SimpsonRule(a=0,b=2, m=20000,f2)
+```

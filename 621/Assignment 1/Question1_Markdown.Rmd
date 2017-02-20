@@ -1,0 +1,471 @@
+---
+title: "621_Assignment1"
+author: "Saeed Rahman"
+date: "February 19, 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# QUESTION 1
+
+###A)
+Implement a function that computes the price of an European Call and
+Put Option. The function should receive as parameters the stock price
+S0, the time to maturity t-T, the strike price K, the interest rate r,
+and the volatility . Calculate and output both the price of a call and a
+put for: S0 = K = 100, time to expiry 1 month, i.e.,  = 30=252, r = 5%,
+and  = 20%.
+
+```{r, message=FALSE, warning=FALSE}
+library(quantmod)#to get the stock prices
+library(rCharts)
+library(gsubfn)
+```
+```{r}
+
+QuestionA<-function(S, K, t, r, sigma,type){
+  d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
+  d2 <- d1 - sigma * sqrt(t)
+  if (type == "c")
+    result <- S*pnorm(d1) - K*exp(-r*t)*pnorm(d2)
+  if (type == "p")
+    result <- K*exp(-r*t) * pnorm(-d2) - S*pnorm(-d1)
+  return(result)
+}
+
+print(paste("Call Price=",QuestionA(S=100,K=100,t=30/252,r=.05,sigma=.2,type="c")))
+      
+print(paste("Put Price=",QuestionA(S=100,K=100,t=30/252,r=.05,sigma=.2,type="p")))
+```
+
+### B)
+Check that the Put-Call parity relation holds, please see Section 4 from
+[2]. Use the same parameters as above.
+```{r}
+QuestionB<-function(S, K, t, r, sigma){
+  call <- QuestionA(S,K,t,r,sigma,type="c")
+  put <- QuestionA(S,K,t,r,sigma,type="p")
+  
+  print("Call - Put = So - Ke^(rt)")
+  print(paste(call," - ",put, " = ",S," - ",(K*exp(r*t))))
+
+  if(abs((abs(call-put)-abs(S-((K*exp(r*t))))))<.01)
+    print("Put-Call Parity holds")
+}
+QuestionB(S=100,K=100,t=30/252,r=.05,sigma=.2)
+
+```
+
+### C)
+The implied volatility is, by denition, the value of  for which the function
+f() = CBSM(S0;K; T; r; ) -???? CM(K; T)
+is zero. Here, we denoted by CM(K; T) and CBSM(S0;K; T; ) the market
+price of an European Call Option and the Black{Scholes{Merton price,
+respectively. Typically, CM(K; T) is taken as the average of best bid and
+best ask quotes for the respective option from the nancial market. In
+this problem please download option prices (you can use the Bloomberg
+Terminal, Yahoo! Finance, etc.) for an equity (any equity not an ETF
+or index), for 3 dierent maturities (nearest to 1 month, 2 months, and
+6 months) and 20 strike prices. Compute the implied volatility using the
+bisection method for each of these options. Use a tolerance level " = 10????4
+and present the results in a table.
+
+####Preprocessing Data
+
+```{r}
+#Importing the option chain downloaded from yahoo finance
+option_chain_csv <- read.csv(file="call.csv",header=TRUE, sep=",")
+#call.csv and put.csv are available in the project folder
+option_chain_csv$days_till_expiry <- as.Date(option_chain_csv$Expiry,"%m/%d/%Y")-Sys.Date()
+#Calculating the days till expiry
+
+option_chain_csv$premium<-(option_chain_csv$Bid+option_chain_csv$Ask)/2
+
+head(option_chain_csv)
+
+```
+#### We are using the options of the company Apple Inc 
+#### For the expiry 24th Feb, 17th March and 21st June
+```{r}
+QuestionC_Bisection<-function(S, K, t, r, type, option_price, max.iter=100000,tolerance=.0001)
+{
+  sigma.upper <- 2
+  sigma.lower <- 0.001
+  sigma.mid <- .5
+  count <- 0
+  fun.mid <- QuestionA(S=S,K=K,t=t,r=r,sigma=sigma.mid,type=type)- option_price
+  start.time <- Sys.time()
+  while(abs(fun.mid) > tolerance && count<max.iter){
+    
+    fun.upper=QuestionA(S=S,K=K,t=t,r=r,sigma=sigma.upper,type=type)-option_price
+    fun.lower=QuestionA(S=S,K=K,t=t,r=r,sigma=sigma.lower,type=type)-option_price
+    fun.mid=QuestionA(S=S,K=K,t=t,r=r,sigma=sigma.mid,type=type)-option_price
+
+    if(fun.mid*fun.lower < 0){
+      sigma.upper <-sigma.mid
+      sigma.mid <- (sigma.upper + sigma.lower)/2
+    }else{
+      sigma.lower<- sigma.mid
+      sigma.mid  <- (sigma.lower + sigma.upper)/2
+    }
+    count <- count + 1
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  if(count>=max.iter){
+    return(list(NA,time.taken,count))
+  }else{
+    return(list(sigma.mid,time.taken,count))
+  }
+}
+
+
+iv=QuestionC_Bisection(S=100,K=100,t=30/252,r=.05,type='c',option_price = 3.051184)
+print(paste("Implied Volume=",iv[1],"Time taken for calculations=",iv[2], "seconds",
+            "Number of iterations=",iv[3]))
+```
+
+Now that we have build the implementation of bisection method, we'll implement on our data.
+
+```{r}
+
+QuestionC<-function(symbol="AAPL"){
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"), env = NULL))
+
+  option_chain <-option_chain_csv
+
+  libor <-.05/100
+  iv <- {}
+  original_iv <-{}
+  optionName <-{}
+  strike <-{}
+  days_till_expiry <-{}
+  time.taken <- 0
+  iterations <- 0
+  for (i in 1:nrow(option_chain)) 
+  {
+    try({
+      bisection <- QuestionC_Bisection(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(option_chain[i,"Strike"]),
+        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+        r = libor,
+        type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+        option_price = as.numeric(option_chain[i,"premium"]))
+       
+      iv <- append(iv,as.numeric(bisection[1]))
+      
+      if(!is.na(bisection[1])){
+        time.taken <- as.numeric(bisection[2])+time.taken
+        iterations <- as.numeric(bisection[3])+iterations
+      }
+      
+      
+      strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
+      
+      optionName <- append(optionName,paste(option_chain[i,"Strike"],"-",
+                                            option_chain[i,"Type"],"Expiring On:",
+                                            option_chain[i,"Expiry"]))
+      days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+      
+    })
+  }
+  option_chain_df <- data.frame(days_till_expiry,optionName,iv,strike)
+  names(option_chain_df)<-c("Days_till_Expiry","variable","Implied_Volatility","strike")
+  time.taken <- time.taken/as.numeric(colSums(!is.na(option_chain_df))[3])
+  iterations <- iterations/as.numeric(colSums(!is.na(option_chain_df))[3])
+  return(list(option_chain_df,time.taken,iterations))
+}
+```
+```{r}
+iv.bisection=QuestionC("AAPL")
+options.data <- iv.bisection[1]
+options.data <- data.frame(options.data)
+options.data <- options.data[complete.cases(options.data$Implied_Volatility),]
+
+```
+To display the data
+```{r}
+head(iv.bisection)
+```
+### D)
+Using the same data as in part c), calculate the implied volatilities using
+the Secant Method and compare the results with the ones in the previous
+part. What do you observe? Write a paragraph comparing the two methods.
+Hint: to compare the two algorithms, one can use two indicators:
+the time to execute the algorithm and the number of iterations necessary
+to reach convergence.
+```{r}
+QuestionD_Secant <- function(S, K, t, r, type, option_price
+                             , x0=0.1, x1=3, tolerance =1e-04, max.iter=10000){
+
+  theta=.00001
+  fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
+  count=1
+  start.time <- Sys.time()
+  while(abs(fun.x1) > tolerance && count<max.iter) {
+    x2=x1-theta
+    fun.x1=QuestionA(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
+    fun.x2=QuestionA(S=S,K=K,t=t,r=r,sigma=x2,type=type)-option_price
+    x1 <- x1- fun.x1/((fun.x1-fun.x2)/theta)   
+    count <-count+1
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  if(x2<0 || count>=max.iter)
+    return(list(NA,time.taken,count))
+  else
+    return(list(x2,time.taken,count))
+}
+
+iv=QuestionD_Secant(S=100,K=100,t=30/252,r=.05,type='p',option_price = 2.4577)
+print(paste("Implied Volume=",iv[1],"Time taken for calculations=",iv[2], "Seconds",
+            "Number of iterations=",iv[3]))
+```
+Now that we have build the secant algorothm, lets give the option chain data
+
+```{r}
+QuestionD<-function(symbol="AAPL"){
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"), env = NULL))
+  
+  option_chain <-option_chain_csv
+  
+  libor <-.05/100
+  iv <- {}
+  original_iv <-{}
+  optionName <-{}
+  strike <-{}
+  days_till_expiry <-{}
+  time.taken <- 0
+  iterations <- 0
+  type <-{}
+  for (i in 1:nrow(option_chain)) 
+  {
+    try({
+      secant <- QuestionD_Secant(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(option_chain[i,"Strike"]),
+        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+        r = libor,
+        type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+        option_price = as.numeric(option_chain[i,"premium"]))
+      
+      iv <- append(iv,100*as.numeric(secant[1]))
+      
+      if(!is.na(secant[1])){
+        time.taken <- as.numeric(secant[2])+time.taken
+        iterations <- as.numeric(secant[3])+iterations
+      }
+      
+      type <- append(type,as.character(option_chain[i,"Type"]))
+      
+      strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
+      
+      optionName <- append(optionName,paste(option_chain[i,"Strike"],"-",
+                                            option_chain[i,"Type"],"Expiring On:",
+                                            option_chain[i,"Expiry"]))
+      days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+      
+    })
+  }
+  option_chain_df <- data.frame(days_till_expiry,type,optionName,iv,strike)
+  names(option_chain_df)<-c("Days_till_Expiry","Type","Specification","Implied_Volatility","strike")
+  time.taken <- time.taken/as.numeric(colSums(!is.na(option_chain_df))[3])
+  iterations <- iterations/as.numeric(colSums(!is.na(option_chain_df))[3])
+  return(list(option_chain_df,time.taken,iterations))
+}
+
+```
+```{r, warning=FALSE}
+options.data={}
+iv.secant=QuestionD("AAPL")
+options.data <- iv.secant[1]
+options.data <- data.frame(options.data)
+options.data <- options.data[complete.cases(options.data$Implied_Volatility),]
+head(options.data)
+```
+### Comparison between Bisection and Secant method
+```{r}
+print(paste("The average time for finding IV using bisection method",iv.bisection[2]))
+print(paste("The average time for finding IV using secant method",iv.secant[2]))
+
+print(paste("The average number of steps in bisection method",iv.bisection[3]))
+print(paste("The average number of steps in secant method",iv.secant[3]))
+
+print(paste("Which means that Secant method is",round((as.numeric(iv.bisection[2])/as.numeric(iv.secant[2]))-1,4)*100,"% faster than Bisection method"))
+
+print(paste("And Secant method requirs ",round((as.numeric(iv.bisection[3])/as.numeric(iv.secant[3]))-1,4)*100,"% fewer steps than Bisection method"))
+```
+The above analysis clearly shows that the secant method is much quicker in terms of converging than the Bisection method. This difference is quite evident when we are running the code. But secant method has its own pitfalls, when the tangent of the function never touches the x axis, then the secant would never converge, whereas Bisection doesn't seem to have that problem. So from my analysis, I have understand that at the end it comes to the tradeoff between speed and success of convergence.
+
+### E)
+Consider the implied volatility values obtained in either of previous parts.
+Create a 2 dimensional plot of implied volatilities versus strike K for the
+closest to maturity options. What do you observe? Plot all implied
+volatilities for the three dierent maturities on the same plot, where you
+use a dierent color for each maturity. In total there should be 3 sets
+of points plotted with dierent color. (BONUS) Create a 3D plot of the
+same implied vols as a function of both maturity and strike, i.e.: (i;Kj)
+where i = 1; 2; 3, and j = 1; 2; : : : ; 20.
+
+#### Interactive Chart
+Its an interactive chart, you can zoom in and deselect different maturities to get a clearer picture
+```{r, echo=FALSE,results='asis',comment=NA}
+library(rCharts)
+library(rgl)
+library(plot3D)
+
+h1=hPlot(Implied_Volatility ~ strike, data =options.data, type ='line',
+         group = 'Days_till_Expiry')
+# h1$legend(enabled=FALSE)
+h1$chart(zoomType="xy")
+# h1
+# h1$show('iframesrc',cdn=TRUE)
+h1$print(include_assets = TRUE)
+```
+The above visualization shows the volatility smile and explains that volatility is not constant as assumed in Black sholes model.
+It can also help us to explain the characterstics of Vega over different strike and time to maturities 
+
+#### 3D Chart
+```{r testgl, webgl=TRUE}
+library(knitr)
+library(rgl)
+knit_hooks$set(webgl = hook_webgl)
+
+plot3d(x=options.data$Days_till_Expiry,
+       y=options.data$Implied_Volatility,
+       z=options.data$strike,
+       col = rainbow(1000)) #3d scatter plot
+```
+### F
+(Greeks) Calculate the derivatives of the call option price with respect
+to S (Delta), and  (Vega) and the second derivative with respect to S
+(Gamma). The parameters are as in part a). Approximate these derivatives
+using an approximation of the partial derivatives. Compare the
+numbers obtained by the two methods.
+
+#### Greeks - Using derivatives method
+
+```{r}
+QuestionF_delta<-function(S, K, t, r, sigma,type)
+{
+  delta <- (QuestionA(S*1.0001, K, t, r, sigma,type)-QuestionA(S, K, t, r, sigma,type))/
+    (S*1.0001-S)
+  return(delta)
+  
+}
+QuestionF_gamma<-function(S, K, t, r, sigma,type)
+{
+  gamma <- (QuestionF_delta(S+1, K, t, r, sigma,type)-QuestionF_delta(S, K, t, r, sigma,type))/1
+}
+
+QuestionF_vega<-function(S, K, t, r, sigma,type)
+{
+  vega <- (QuestionA(S, K, t, r, sigma*1.01,type)-QuestionA(S, K, t, r, sigma,type))/
+    (sigma*1.01-sigma)
+  return(abs(vega))
+}
+
+delta=QuestionF_delta(S=100,K=100,t=2/252,r=.05,sigma=.2,type="c")
+
+gamma=QuestionF_gamma(S=100,K=100,t=2/252,r=.05,sigma=.2,type="c")
+
+vega=QuestionF_vega(S=100,K=100,t=2/252,r=.05,sigma=.2,type="c")
+
+print(paste("Delta=",delta," Gamma=",gamma," Vega=",vega))
+
+```
+#### Greeks - using PD
+
+```{r}
+QuestionF_PD<-function(S, K, t, r, sigma,type)
+{
+ 
+  d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
+  d2 <- d1 - sigma * sqrt(t)
+#Delta----
+  if (type == "c") 
+    delta = exp((r)*t)*pnorm(d1)
+  if (type == "p")
+    delta = exp((r)*t)*(pnorm(d1)-1)
+  
+#Gamma---- 
+
+  gamma = exp((-r)*t)*dnorm(d1)/(S*sigma*sqrt(t))# Call,Put
+
+
+#Theta----      
+
+    
+  Theta1 = -(S*exp((r)*t)*dnorm(d1)*sigma)/(2*sqrt(t))
+  if (type == "c") 
+    theta = Theta1 -
+    (r)*S*exp((r)*t)*pnorm(+d1) - r*K*exp(-r*t)*pnorm(+d2)
+  if (type == "p")
+    theta = Theta1 +
+    (r)*S*exp((r)*t)*pnorm(-d1) + r*K*exp(-r*t)*pnorm(-d2)
+
+
+#Vega----
+
+  vega = S*exp((r)*t)*dnorm(d1)*sqrt(t) # Call,Put
+  
+  return(list(delta,gamma,theta,vega))
+
+}
+
+greeks=QuestionF_PD(S=100,K=100,t=2/252,r=.05,sigma=.2,type="c")
+print(paste("Delta=",greeks[1]," Gamma=",greeks[2]," Vega=",greeks[4]))
+
+```
+
+### G)
+Apply the formulae developed in part f) to all the options you looked at in
+part c). To this end use the implied volatilities you previously calculated
+for each of the options.
+
+```{r}
+QuestiongG<-function(options.data)
+{
+  delta <-{}
+  gamma <-{}
+  vega <-{}
+  libor <- .05/100
+  stock_df<-as.data.frame(getSymbols("AAPL",from = as.Date("2017-01-01"), env = NULL))
+  for (i in 1:nrow(options.data)) 
+  {
+
+    greeks<-QuestionF_PD(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(options.data[i,"strike"]),
+        t = as.numeric(options.data[i,"Days_till_Expiry"])/252,
+        r = libor,
+     type = ifelse((options.data[i,"Type"]=="Call"), "c", "p"),
+    sigma = as.numeric(options.data[i,"Implied_Volatility"]))
+
+    delta <- append(delta, greeks[1])
+    gamma <- append(gamma,greeks[2])
+    vega <- append(vega, greeks[4])
+    
+  }
+  options.data$Delta <-delta
+  options.data$Gamma <-gamma
+  options.data$Vega <-vega
+  return(options.data)
+}
+
+options.data.greeks <- QuestiongG(data.frame(options.data))
+
+head(options.data.greeks$Delta)
+
+head(options.data.greeks$Gamma)
+
+head(options.data.greeks$Vega)
+
+```
