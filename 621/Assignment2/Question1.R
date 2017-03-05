@@ -66,7 +66,39 @@ BinomialTree= function(isCall, isAmerican, K=100, Tm=1,
        Price = V[1,1], S=round(S,2), V=round(V,4))
 }
 
-BinomialTree(isCall=T, isAmerican=F)
+Clewlow3_3 = function(isCall, isAmerican, K=100, Tm=1, 
+                      S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2)
+{
+  # Trinomial Tree: j times, 2*j+1 final nodes
+  # Precompute constants ----
+  dt = Tm/N 
+  nu = r - div - 0.5 * sig^2
+  pu = 0.5 * ( (sig^2*dt + nu^2 *dt^2)/dx^2 + nu*dt/dx )
+  pm = 1.0 -   (sig^2*dt + nu^2 *dt^2)/dx^2 #### sideways market
+  pd = 0.5 * ( (sig^2*dt + nu^2 *dt^2)/dx^2 - nu*dt/dx )
+  disc = exp(-r*dt)
+  u=1.1
+  d=1/u
+  nRows = 2*N+1
+  nCols = N+1
+  cp = ifelse(isCall, 1, -1)
+  
+  # Intialize asset prices  ----
+  V = S = matrix(0, nrow=nRows, ncol=nCols, dimnames=list(
+    paste("NumUps", N:-N, sep="="), paste("T", 0:3, sep="=")))
+  S[nCols, 1] = S0
+  for (j in 1:N) {
+    for(i in (nCols-j+1):(nCols+j-1)) {
+      S[i-1, j+1] = S[i, j] * u
+      S[i+1, j+1] = S[i, j] * d
+    }
+  }
+  print(S)
+}
+
+Clewlow3_3(isCall=T, isAmerican=F)
+
+# BinomialTree(isCall=T, isAmerican=F)
 # Clewlow2_3n5(isCall=F, isAmerican=T)
 
 
