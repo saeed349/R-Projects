@@ -47,8 +47,21 @@ BinomialTreeOld= function(isCall, isAmerican, K=100, Tm=1,
 
 #inspired from clewlaws trinomial tree
 BinomialTree = function(isCall, isAmerican=FALSE, K=100, Tm=1, 
-                      S0=100, r=0.06, sig=0.2, N=3, u=1.1, d=1/u)
+                      S0=100, r=0.06, sig=0.2, N=3, u=1.1, d=1/u,div=0)
 {
+  # dt = Tm/N
+  # nu=r-div-0.5*sig*sig 
+  # dxu=sqrt(sig*sig*dt+((nu*dt)^2))
+  # dxd=-dxu
+  # pu=0.5+0.5*(nu*dt/dxu)
+  # pd=1-pu
+  # disc=exp(-r*dt)
+  # 
+  # dpu=disc*pu
+  # dpd=disc*pd
+  # edxud=exp(dxu-dxd)
+  # edxd=exp(dxd)
+  
   # Precompute constants ----
   dt = Tm/N # diving the time into partition, to get time for each state
   disc = exp(-r*dt)
@@ -71,17 +84,20 @@ BinomialTree = function(isCall, isAmerican=FALSE, K=100, Tm=1,
     for(i in (nCols-j+1):(nCols+j-1)) {
       S[i-1, j+1] = S[i, j] * u
       S[i+1, j+1] = S[i, j] * d
+      # S[i-1, j+1] = S[i, j]*exp(dxu)
+      # S[i+1, j+1] = S[i, j] *exp(dxd)
     }
   }
   for (i in 1:nRows) {
     V[i, nCols] = max( 0, cp * (S[i, nCols]-K))
   }
-  # print(V)
+  # print(S)
   # V
   # Step backwards through the tree ----
   for (j in (nCols-1):1) {
     for(i in (nCols-j+1):(nCols+j-1)) {
       V[i, j] = disc * (p*V[i-1,j+1] + (1-p)*V[i+1,j+1])
+      # V[i, j] = disc * (pu*V[i-1,j+1] + pd*V[i+1,j+1])
       if(isAmerican) {
         # if american option, then take the Value at each node as the max of the
         # value of option or the payoff at that period
@@ -90,9 +106,10 @@ BinomialTree = function(isCall, isAmerican=FALSE, K=100, Tm=1,
     } 
   }
   #Returning all the calculated values as a list.
-  list(Type = paste( ifelse(isAmerican, "American", "European"), 
-                     ifelse(isCall, "Call", "Put")),
-       Price = V[nCols,1], S=round(S,2), V=round(V,4))
+  # list(Type = paste( ifelse(isAmerican, "American", "European"), 
+  #                    ifelse(isCall, "Call", "Put")),
+  #      Price = V[nCols,1], S=round(S,2), V=round(V,4))
+  return(V[nCols,1])
 }
 
 #Black sholes merton pricing function
@@ -195,7 +212,7 @@ Secant_Jacob(S=100,K=100,t=30/252,r=.05,type='c',option_price = 3.051184)
 #Calculating IV on the option chain using secant method
 ImpliedVol_Secantfunction<-function(symbol="AAPL",option_chain=option_chain_csv,rate=.75/100){
   symbol="AAPL"
-  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"), env = NULL))
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"),to=as.Date("2017-02-19"), env = NULL))
 
   iv <- {}
   original_iv <-{}
@@ -205,23 +222,25 @@ ImpliedVol_Secantfunction<-function(symbol="AAPL",option_chain=option_chain_csv,
   time.taken <- 0
   iterations <- 0
   type <-{}
+  bid<-{}
+  ask<-{}
   for (i in 1:nrow(option_chain)) 
   {
     try({
-       # secant <- Secant(
-       # S = as.numeric(tail(stock_df,1)[6]),
-       # K = as.numeric(option_chain[i,"Strike"]),
-       # t = as.numeric(option_chain[i,"days_till_expiry"])/252,
-       # r = rate,
-       # type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
-       # option_price = as.numeric(option_chain[i,"premium"]))
-       # 
-       # iv <- append(iv,as.numeric(secant[1]))
-       # 
-       # if(!is.na(secant[1])){
-       #  time.taken <- as.numeric(secant[2])+time.taken
-       #  iterations <- as.numeric(secant[3])+iterations
-       # }
+       secant <- Secant(
+       S = as.numeric(tail(stock_df,1)[6]),
+       K = as.numeric(option_chain[i,"Strike"]),
+       t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+       r = rate,
+       type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+       option_price = as.numeric(option_chain[i,"premium"]))
+
+       iv <- append(iv,as.numeric(secant[1]))
+
+       if(!is.na(secant[1])){
+        time.taken <- as.numeric(secant[2])+time.taken
+        iterations <- as.numeric(secant[3])+iterations
+       }
       
       #FOptions Implementation ----
       # ivol <- GBSVolatility(option_chain[i,"premium"],
@@ -230,22 +249,22 @@ ImpliedVol_Secantfunction<-function(symbol="AAPL",option_chain=option_chain_csv,
       #         Time = as.numeric(option_chain[i,"days_till_expiry"])/252,
       #         r = rate, b=0, maxiter = 1000)
       # iv <- append(iv,as.numeric(ivol))
-      time.taken <- as.numeric(0)
-      iterations <- as.numeric(0)
+      # time.taken <- as.numeric(0)
+      # iterations <- as.numeric(0)
 
       
       #Inspired from Jacob chetta----
-      secant <- Secant_Jacob(
-        S = as.numeric(tail(stock_df,1)[6]),
-        K = as.numeric(option_chain[i,"Strike"]),
-        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
-        r = rate,
-        type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
-        option_price = as.numeric(option_chain[i,"premium"]))
-
-      iv <- append(iv,as.numeric(secant[1]))
-      time.taken <- as.numeric(0)
-      iterations <- as.numeric(0)
+      # secant <- Secant_Jacob(
+      #   S = as.numeric(tail(stock_df,1)[6]),
+      #   K = as.numeric(option_chain[i,"Strike"]),
+      #   t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+      #   r = rate,
+      #   type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+      #   option_price = as.numeric(option_chain[i,"premium"]))
+      # 
+      # iv <- append(iv,as.numeric(secant[1]))
+      # time.taken <- as.numeric(0)
+      # iterations <- as.numeric(0)
       #----
       
       
@@ -258,11 +277,14 @@ ImpliedVol_Secantfunction<-function(symbol="AAPL",option_chain=option_chain_csv,
                                             option_chain[i,"Expiry"]))
       days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
       
-      original_iv <- append(original_iv,as.numeric(option_chain[i,"Implied.Volatility"]))
+      bid<-append(bid,as.numeric(option_chain[i,"Bid"]))
+      ask<-append(ask,as.numeric(option_chain[i,"Ask"]))
+      
+      # original_iv <- append(original_iv,as.numeric(option_chain[i,"Implied.Volatility"]))
     })
   }
-  option_chain_df <- data.frame(days_till_expiry,type,optionName,iv,strike,original_iv)
-  names(option_chain_df)<-c("Days_till_Expiry","Type","Specification","Implied_Volatility","strike","original_iv")
+  option_chain_df <- data.frame(days_till_expiry,type,optionName,iv,strike,bid,ask)
+  names(option_chain_df)<-c("Days_till_Expiry","Type","Specification","Implied_Volatility","Strike","Bid","Ask")
   time.taken <- time.taken/as.numeric(colSums(!is.na(option_chain_df))[3])
   iterations <- iterations/as.numeric(colSums(!is.na(option_chain_df))[3])
   list(option_chain_df,time.taken,iterations)
@@ -284,7 +306,11 @@ head(option_chain_csv)
 
 
 #----
-df=x
+jacob_secant
+foption_secant
+assignment1_secant
+
+
 df=ImpliedVol_Secantfunction()
 df=as.data.frame(df[1])
 # option.df=complete.cases(df[,Implied_Volatility])
@@ -292,9 +318,33 @@ options.df=df[complete.cases(df$Implied_Volatility),]
 
 BSM(S=100,K=100,t=30/252,r=.75/100,sigma=.2,type="c")
 
-bin_price=BinomialTree(isCall=TRUE,K=100,Tm =30/252 ,S0 =100 ,sig = .2,N =200,r=.75/100,u=1.01)
+bin_price=BinomialTree(isCall=TRUE,K=100,Tm =30/252 ,S0 =100 ,sig = .2,N =200,r=.06,u=1.01)
 # BinomialTree(isCall=T, isAmerican=F)
 # Clewlow2_3n5(isCall=F, isAmerican=T)
 
+#
+QuestionC<-function(options.df){
+  eur_binomial <-{}
+  eur_bsm <-{}
+  ame_binomial <-{}
+  ame_bsm <-{}
   
-
+  for (i in 1:nrow(options.df)){
+    stock_df<-as.data.frame(getSymbols("AAPL",from = as.Date("2017-01-01"),
+                                       to=as.Date("2017-02-19"), env = NULL))
+    eur_binomial <- append(eur_binomial,BinomialTree(
+                       isCall = as.logical(options.df[i,"Type"]=="Call"),
+                           K  = as.numeric(options.df[i,"Strike"]),
+                           Tm = as.numeric(options.df[i,"Days_till_Expiry"]),
+                           S0 = as.numeric(tail(stock_df,1)[6]),
+                          sig = as.numeric(options.df[i,"Implied_Volatility"]),
+                           r  = .75/100,
+                            N = 200))
+    # print(eur_binomial)
+                           
+  }
+  return(eur_binomial)
+  
+}
+  
+df <- QuestionC(options.df)

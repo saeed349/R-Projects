@@ -17,14 +17,15 @@ TrapRule = function(a, b, m, f)  # alternate version  #### the one in the fusoi
 TrapezoidRule = function(a, b, m, f)
 {
   h = (b-a)/(m-1)
-  theSum = 0.5 * h * (f(a)+f(b)) #why -f(b), shouldnt it be + ?
+  Sum = 0.5 * h * (f(a)+f(b))
   for (i in 1:(m-2)) {
     ai = a + i*h
-    theSum = theSum + h*f(ai)
+    Sum = Sum + h*f(ai)
   }
-  theSum
+  return(Sum)
 }
 
+TrapezoidRule(b=10^6, a=-(10^6), m=12000,f1)
 
 f1<-function(x){
   if(x==0)
@@ -38,20 +39,21 @@ f2<-function(x){
 }
 
 # b=10^4; a=-(10^4); n=15
-trap<-function(a,b,n,f)
+Trapezoidal_Integration<-function(a,b,n,f)
 {
-  table6_5 = matrix(0, nrow=n, ncol=4, dimnames=list(
-    c(1:n), c('m', 'I_2m_(f)', 'E_2m_(f)', 'E_2m_(f)/E_2m-1_(f)')))
+  table = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'Integration Result', 'Error', 'Error Ratio')))
   for(i in 1:n) {
-    table6_5[i,1] = ifelse(1 == i, yes=2, no=2*table6_5[i-1,'m']-1)
-    table6_5[i,2] = TrapezoidRule(a, b, table6_5[i,'m'], f) 
-    table6_5[i,3] = pi - table6_5[i,2]  
-    table6_5[i,4] = ifelse(1 == i, NA, table6_5[i-1,3] /table6_5[i,3] )
+    table[i,1] = ifelse(1 == i, yes=2, no=2*table[i-1,'m']-1)
+    table[i,2] = TrapezoidRule(a, b, table[i,'m'], f) 
+    table[i,3] = pi - table[i,2]  
+    table[i,4] = ifelse(1 == i, NA, table[i-1,3] /table[i,3] )
   }
-  return(table6_5)
+  return(table)
   
 }
 
+SimpsonRule(a=0,b=2, m=20000,f2)
 
 
 #professors code
@@ -64,42 +66,37 @@ SimpsonRule = function(a, b, m, f)
   y = f(x)
   ix1 = seq(from=3, by=2, to=2*m+1)
   ix2 = seq(from=2, by=2, to=2*m  )
-  print(paste("m=",m," h=",h," return=",
-              (h/6 * (y[1] + 2*sum(y[ix1]) + 4*sum(y[ix2]) + y[2*m+1]))))
-  # print(paste(y))
-  # print(paste(ix1))
-  # print(paste(ix2))
   return(h/6 * (y[1] + 2*sum(y[ix1]) + 4*sum(y[ix2]) + y[2*m+1]))
   
 }
 
 #working code
-SimpsonRule2= function(a, b, m, f)
+SimpsonRule= function(a, b, m, f)
 {
   h = (b-a)/(m-1)
-  theSum = (1/3) * h * (f(a)+f(b)) #why -f(b), shouldnt it be + ?
-  print(theSum)
+  Sum = (1/3) * h * (f(a)+f(b)) 
   for (i in 1:(m-2)) {
     if(i%%2 != 0){
-      theSum = theSum + h*f(a + i*h) *(4/3)
+      Sum = Sum + h*f(a + i*h) *(4/3)
     }else{
-      theSum = theSum + h*f(a + i*h) *(2/3)
+      Sum = Sum + h*f(a + i*h) *(2/3)
     }
   }
-  theSum
+  return(Sum)
 }
+SimpsonRule(a=-(10^6),b=10^6, m=12000,f1)
 
-simson<-function(a,b,n,f)
+Simpson_Integration<-function(a,b,n,f)
 {
-  table6_5 = matrix(0, nrow=n, ncol=4, dimnames=list(
-    c(1:n), c('m', 'I_2m_(f)', 'E_2m_(f)', 'E_2m_(f)/E_2m-1_(f)')))
+  table = matrix(0, nrow=n, ncol=4, dimnames=list(
+    c(1:n), c('m', 'Integration Result', 'Error', 'Error Ratio')))
   for(i in 1:n) {
-    table6_5[i,1] = ifelse(1 == i, yes=2, no=2*table6_5[i-1,'m']-1)
-    table6_5[i,2] = SimpsonRule2(a, b, table6_5[i,'m'], f)
-    table6_5[i,3] = 1 - table6_5[i,2]  
-    table6_5[i,4] = ifelse(1 == i, NA, table6_5[i-1,3] /table6_5[i,3] )
+    table[i,1] = ifelse(1 == i, yes=2, no=2*table[i-1,'m']-1)
+    table[i,2] = SimpsonRule(a, b, table[i,'m'], f1)
+    table[i,3] = 1 - table[i,2]  
+    table[i,4] = ifelse(1 == i, NA, table[i-1,3] /table[i,3] )
   }
-  return(table6_5)
+  return(table)
 }
 
-
+Simpson_Integration(b=10^4, a=-(10^4), n=15,f1)
