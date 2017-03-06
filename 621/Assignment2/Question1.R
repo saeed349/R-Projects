@@ -81,6 +81,7 @@ Clewlow3_3 = function(isCall, isAmerican, K=100, Tm=1,
   p = (exp(r*dt)-d)/(u-d)
   for (j in (nCols-1):1) {
     for(i in (nCols-j+1):(nCols+j-1)) {
+      print((nCols-j+1):(nCols+j-1))
       V[i, j] = disc * (p*V[i-1,j+1] + (1-p)*V[i+1,j+1])
       if(isAmerican) {
         V[i, j] = max(V[i, j], cp * (S[i, j] - K))
@@ -90,19 +91,11 @@ Clewlow3_3 = function(isCall, isAmerican, K=100, Tm=1,
   V
 }
 
-# for (j in (M-1):1) {
-#   for (i in 1:j) {
-#     V[i, j] = disc * ( p*V[i, j+1] + (1-p)*V[i+1, j+1] )
-#     if(isAmerican) {
-#       V[i, j] = max(V[i, j], cp * (S[i, j] - K))
-#     }
-#   }
-# }
 
 Clewlow3_3(isCall=T, isAmerican=F)
 
-BinomialTree(isCall=T, isAmerican=F)
+# BinomialTree(isCall=T, isAmerican=F)
 # Clewlow2_3n5(isCall=F, isAmerican=T)
 
-
+  
 
