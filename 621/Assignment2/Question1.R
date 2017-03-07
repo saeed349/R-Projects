@@ -308,15 +308,22 @@ QuestionC<-function(options.df){
   return(options.df)
   
 }
-  
+ 
 df <- QuestionC(options.df)
 df[1]
 plot(df$Strike,df$BinomialAmerican)
 
-# h1=hPlot(Implied_Volatility ~ strike, data =options.data, type ='line',
-#          group = 'Days_till_Expiry')
-# # h1$legend(enabled=FALSE)
-# h1$chart(zoomType="xy")
-# # h1
-# # h1$show('iframesrc',cdn=TRUE)
+
+df_melted <- melt(df,id.vars=c("Days_till_Expiry","Strike"), 
+                  measure.vars = c("BinomialEuropean","Bid","Ask"))
+
+h1=hPlot( BinomialAmerican ~ Strike, data =df, type ='line',
+         group = 'Days_till_Expiry')
+
+h1=hPlot(value ~ Strike, data =df_melted, type ='line',
+          group = 'variable')
+# h1$legend(enabled=FALSE)
+h1$chart(zoomType="xy")
+h1
+# h1$show('iframesrc',cdn=TRUE)
 # h1$print(include_assets = TRUE)
