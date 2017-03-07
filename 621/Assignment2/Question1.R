@@ -1,6 +1,7 @@
 library(quantmod)
 library(fOptions)
 library(rCharts)
+library(reshape)
 
 #Binomial Tree using multiplicative method----
 BinomialTree = function(isCall, isAmerican=FALSE, K, Tm, 
@@ -256,11 +257,9 @@ option_chain_csv$premium<-(option_chain_csv$Bid+option_chain_csv$Ask)/2
 head(option_chain_csv)
 
 
-#----
+#Plotting the values as per question B----
 
-jacob_secant
-foption_secant
-assignment1_secant
+
 
 df=0
 df=ImpliedVol_Secant(option_chain = option_chain_csv)
@@ -315,15 +314,123 @@ plot(df$Strike,df$BinomialAmerican)
 
 
 df_melted <- melt(df,id.vars=c("Days_till_Expiry","Strike"), 
-                  measure.vars = c("BinomialEuropean","Bid","Ask"))
+                  measure.vars = c("BinomialEuropean","BlackSholesMertonEuropean",
+                                   "BinomialAmerican","Bid","Ask"))
 
-h1=hPlot( BinomialAmerican ~ Strike, data =df, type ='line',
+h2=hPlot( BinomialAmerican ~ Strike, data =df, type ='line',
          group = 'Days_till_Expiry')
+h2
 
 h1=hPlot(value ~ Strike, data =df_melted, type ='line',
           group = 'variable')
 # h1$legend(enabled=FALSE)
 h1$chart(zoomType="xy")
 h1
+
+h3=hPlot( BlackSholesMertonEuropean ~ Strike, data =df, type ='line',
+          group = 'Days_till_Expiry')
+h3
 # h1$show('iframesrc',cdn=TRUE)
 # h1$print(include_assets = TRUE)
+
+
+#----QuestionD -Error Comparison
+QuestionD<-function(){
+  bsm_price <- {}
+  binomial_price <-{}
+  error <-{}
+  iter <-c(10, 20, 30, 40, 50, 100, 150, 200, 250, 300, 350, 400)
+  for(i in iter){
+    binomial_temp <-BinomialTree(isCall=FALSE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =i,r=.06)
+    bsm_temp <-BSM(S=100,K=100,t=1,r=.06,sigma=.2,type="p")
+    binomial_price <- append(binomial_price,binomial_temp)
+    bsm_price <- append(bsm_price,bsm_temp)
+    error <- append(error,bsm_temp-binomial_temp)
+  }
+  print(error)
+  plot(iter,error)
+}
+QuestionD()
+
+#BonusQuestion----
+
+Secant_Binomial <- function(S, K, t, r, type, option_price
+                   , x0=0.1, x1=3, tolerance=1e-07, max.iter=10000){
+  x1=3
+  theta=.00001
+  fun.x1=BinomialTree(isCall=is.logical(type=="Call"),K=K,Tm =t ,S0 =S ,sig = x1,N =200,r=r)-option_price
+  count=1
+  start.time <- Sys.time()
+  while(abs(fun.x1) > tolerance && count<max.iter) {
+    x2=x1-theta
+    fun.x1=BinomialTree(isCall=is.logical(type=="Call"),K=K,Tm =t ,S0 =S ,sig = x1,N =200,r=r)-option_price
+    fun.x2=BinomialTree(isCall=is.logical(type=="Call"),K=K,Tm =t ,S0 =S ,sig = x2,N =200,r=r)-option_price
+    x1 <- x1- fun.x1/((fun.x1-fun.x2)/theta)   
+    count <-count+1
+    print(count)
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  if(x2<0 || count>=max.iter)
+    return(list(NA,time.taken,count))
+  else
+    return(list(x2,time.taken,count))
+}
+ImpliedVol_Secant_Binomial<-function(symbol="AAPL",option_chain,rate=.75/100){
+  symbol="AAPL"
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"),to=as.Date("2017-02-19"), env = NULL))
+  
+  iv <- {}
+  original_iv <-{}
+  optionName <-{}
+  strike <-{}
+  days_till_expiry <-{}
+  time.taken <- 0
+  iterations <- 0
+  type <-{}
+  bid<-{}
+  ask<-{}
+  for (i in 1:nrow(option_chain)) 
+  {
+    try({
+      #Myoldmethod----
+      secant <- Secant_Binomial(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(option_chain[i,"Strike"]),
+        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+        r = rate,
+        type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+        option_price = as.numeric(option_chain[i,"premium"]))
+      
+      iv <- append(iv,as.numeric(secant[1]))
+      
+      if(!is.na(secant[1])){
+        time.taken <- as.numeric(secant[2])+time.taken
+        iterations <- as.numeric(secant[3])+iterations
+      }
+      
+      type <- append(type,as.character(option_chain[i,"Type"]))
+      
+      strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
+      
+      optionName <- append(optionName,paste(option_chain[i,"Strike"],"-",
+                                            option_chain[i,"Type"],"Expiring On:",
+                                            option_chain[i,"Expiry"]))
+      days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+      
+      bid<-append(bid,as.numeric(option_chain[i,"Bid"]))
+      ask<-append(ask,as.numeric(option_chain[i,"Ask"]))
+      
+      # original_iv <- append(original_iv,as.numeric(option_chain[i,"Implied.Volatility"]))
+    })
+  }
+  option_chain_df <- data.frame(days_till_expiry,type,optionName,iv,strike,bid,ask)
+  names(option_chain_df)<-c("Days_till_Expiry","Type","Specification","Implied_Volatility","Strike","Bid","Ask")
+  time.taken <- time.taken/as.numeric(colSums(!is.na(option_chain_df))[3])
+  iterations <- iterations/as.numeric(colSums(!is.na(option_chain_df))[3])
+  list(option_chain_df,time.taken,iterations)
+}
+
+df=ImpliedVol_Secant_Binomial(option_chain = option_chain_csv)
+df=as.data.frame(df[1])
+options.df=df[complete.cases(df$Implied_Volatility),]
