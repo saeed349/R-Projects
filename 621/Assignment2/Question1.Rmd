@@ -273,15 +273,36 @@ option_chain_put <-PriceCalculator(options.df_put)
 ### Plotting the Call Option Prices that are expiring in 5 days
 Zoomin to see the difference in prices.
 Also select legend to deactivate and activate individual series of option prices
-```{r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+``` {r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+# {r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
+
 library(rCharts)
 library(reshape)
+
+# option_chain_call$Implied_Volatility<-NULL
+# df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
+# first <-df_split[1]
+# first <- as.data.frame(first)
+
+# first <- first$`5`
+# first[1:2] <- list(NULL)
+# rownames(first) <- first$Strike
+# first$Strike <- NULL
+# head(first)
+# a <- Highcharts$new()
+# a$chart(type = "line")
+# a$chart(zoomType="xy")
+# a$title(text = "Apple Call Expiring in 5 Days")
+# a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+# a$yAxis(title = list(text = "Option Price"),replace = T)
+# a$data(first);
+# a
+# a$print(include_assets = TRUE)
 
 option_chain_call$Implied_Volatility<-NULL
 df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
 first <-df_split[1]
-as.data.frame(first)
-
+# second <- as.data.frame(first)
 first <- first$`5`
 first[1:2] <- list(NULL)
 rownames(first) <- first$Strike
@@ -292,10 +313,11 @@ a$chart(type = "line")
 a$chart(zoomType="xy")
 a$title(text = "Apple Call Expiring in 5 Days")
 a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
-a$yAxis(title = list(text = "Option Price"),replace = T)
-a$data(first);
+a$yAxis(title = list(text = "Option Price"))
+# a$xAxis(title = "Strikes")
+a$data(first)
 a$print(include_assets = TRUE)
-a$print(include_assets = TRUE)
+
 
 ```
 
@@ -445,10 +467,7 @@ QuestionD<-function(){
 QuestionD()
 
 ```
-```{r, message=FALSE, warning=FALSE}
 
-
-```
-
+It is very clear that that as the number of steps in the tree increases, the error comes down. And the error is lowest at the highest number of steps which is 400
 
 
