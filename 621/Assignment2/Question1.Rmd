@@ -279,36 +279,39 @@ Also select legend to deactivate and activate individual series of option prices
 
 library(rCharts)
 library(reshape)
-df_melted <- melt(option_chain_call,id.vars=c("Days_till_Expiry","Strike"), 
-                  measure.vars = c("BinomialEuropean","BlackSholesMertonEuropean",
-                                   "BinomialAmerican","Bid","Ask")) #,
-df_melted <- melt(option_chain_call,id.vars=c("Days_till_Expiry","Strike"), 
-                  measure.vars = c("BinomialEuropean"))
-colnames(df_melted)[4]<-"Option_Price"
-h1=hPlot(Option_Price ~ Strike, data =df_melted, type ='line',
-          group = 'Days_till_Expiry')
-h1$chart(zoomType="xy")
-h1$xAxis(title = list(text = "Different Strikes"))
-# h1$yAxis(title='Option Price')
-# h1$print(include_assets = TRUE)
-h1
+# df_melted <- melt(option_chain_call,id.vars=c("Days_till_Expiry","Strike"), 
+#                   measure.vars = c("BinomialEuropean","BlackSholesMertonEuropean",
+#                                    "BinomialAmerican","Bid","Ask")) #,
+# df_melted <- melt(option_chain_call,id.vars=c("Days_till_Expiry","Strike"), 
+#                   measure.vars = c("BinomialEuropean"))
+# colnames(df_melted)[4]<-"Option_Price"
+# h1=hPlot(Option_Price ~ Strike, data =df_melted, type ='line',
+#           group = 'Days_till_Expiry')
+# h1$chart(zoomType="xy")
+# h1$xAxis(title = list(text = "Different Strikes"))
+# # h1$yAxis(title='Option Price')
+# # h1$print(include_assets = TRUE)
+# h1
 ```
-#### Plotting the American Option Prices for the Call using the Binomial Tree
+#### Plotting the Call Option Prices that are expiring in 5 days
+Zoomin to see the difference in prices.
+Also select legend to deactivate and activate individual series of option prices
 ```{r}
 
-df_melted <- melt(option_chain_call,id.vars=c("Days_till_Expiry","Strike"), 
-                  measure.vars = c("Bid","Ask")) #,
-colnames(df_melted)[4]<-"Option_Price"
-h1=hPlot(Option_Price ~ Strike, data =df_melted, type ='line',
-          group = 'variable')
-# h1$legend(enabled=FALSE)
-h1$chart(zoomType="xy")
-h1$xAxis(title = list(text = "Different Strikes"))
-# h1$yAxis(title='Option Price')
-# h1$print(include_assets = TRUE)
-h1
-
-#Use this one 12:30 AM 8th March
+# df_melted <- melt(option_chain_call,id.vars=c("Days_till_Expiry","Strike"), 
+#                   measure.vars = c("Bid","Ask")) #,
+# colnames(df_melted)[4]<-"Option_Price"
+# h1=hPlot(Option_Price ~ Strike, data =df_melted, type ='line',
+#           group = 'variable')
+# # h1$legend(enabled=FALSE)
+# h1$chart(zoomType="xy")
+# h1$xAxis(title = list(text = "Different Strikes"))
+# # h1$yAxis(title='Option Price')
+# # h1$print(include_assets = TRUE)
+# h1
+# 
+# #Use this one 12:30 AM 8th March
+option_chain_call$Implied_Volatility<-NULL
 df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
 first <-df_split[1]
 as.data.frame(first)
@@ -316,41 +319,271 @@ first <- first$`5`
 first[1:2] <- list(NULL)
 rownames(first) <- first$Strike
 first$Strike <- NULL
+
 a <- Highcharts$new()
 a$chart(type = "line")
-a$title(text = "US Personal Expenditure")
-a$xAxis(categories = rownames(first))
-a$yAxis(title = list(text = "Billions of dollars"))
+a$chart(zoomType="xy")
+a$title(text = "Apple Call Expiring in 5 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"),replace = T)
 a$data(first)
 a
+a$print(include_assets = TRUE)
 
 ```
 
-### Plotting the Option Prices for the Put
+### Plotting the Option Prices for the Put Expiring in 26 days
 
 ```{r}
 
-df_melted <- melt(option_chain_put,id.vars=c("Days_till_Expiry","Strike"), 
-                  measure.vars = c("BinomialEuropean","BlackSholesMertonEuropean",
-                                   "BinomialAmerican")) #,"Bid","Ask"
-colnames(df_melted)[4]<-"Option_Price"
-h1=hPlot(Option_Price ~ Strike, data =df_melted, type ='line',
-          group = 'variable')
-# h1$legend(enabled=FALSE)
-h1$chart(zoomType="xy")
-# h1$print(include_assets = TRUE)
-h1
+df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
+first <-df_split[2]
+as.data.frame(first)
+first <- first$`26`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Call Expiring in 26 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+# a$xAxis(title = "Strikes")
+a$data(first)
+a
+a$print(include_assets = TRUE)
+
+
+```
+
+### Plotting the Option Prices for the Put Expiring in 152 days
+
+```{r}
+
+df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
+first <-df_split[3]
+as.data.frame(first)
+first <- first$`152`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Call Expiring in 152 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+# a$xAxis(title = "Strikes")
+a$data(first)
+a
+a$print(include_assets = TRUE)
+
+
+```
+
+#### Plotting the Put Option Prices that are expiring in 5 days
+Zoomin to see the difference in prices.
+Also select legend to deactivate and activate individual series of option prices
+```{r}
+option_chain_put$Implied_Volatility<-NULL
+df_split <-split(option_chain_put,option_chain_put$Days_till_Expiry)
+first <-df_split[1]
+as.data.frame(first)
+first <- first$`5`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Put Options Expiring in 5 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+a$data(first)
+a
+a$print(include_assets = TRUE)
+
+```
+
+### Plotting the Option Prices for the Put Expiring in 26 days
+
+```{r}
+
+df_split <-split(option_chain_put,option_chain_put$Days_till_Expiry)
+first <-df_split[2]
+as.data.frame(first)
+first <- first$`26`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Put Options Expiring in 26 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+a$data(first)
+a
+a$print(include_assets = TRUE)
+
+
+```
+
+### Plotting the Option Prices for the Put Expiring in 152 days
+
+```{r}
+
+df_split <-split(option_chain_put,option_chain_put$Days_till_Expiry)
+first <-df_split[3]
+as.data.frame(first)
+first <- first$`152`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Put Options Expiring in 152 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+a$data(first)
+a
+a$print(include_assets = TRUE)
 
 
 ```
 
 
+### C)
 
+The table obtained above in the previous question clearly shows that even though there exist a small error in the option prices obtained, the binomial tree(simulation method) closely predicts the price as per the Analytical equation, that is the Black sholes equation. We can also validate the accuracy of the Binomial tree and Blacksholes model used in this program by observing the small error in price difference between the calculated and the original bid and ask values.
 
+### D)
+```{r}
+QuestionD<-function(){
+  bsm_price <- {}
+  binomial_price <-{}
+  error <-{}
+  iter <-c(10, 20, 30, 40, 50, 100, 150, 200, 250, 300, 350, 400)
+  for(i in iter){
+    binomial_temp <-BinomialTree(isCall=FALSE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =i,r=.06)
+    bsm_temp <-BSM(S=100,K=100,t=1,r=.06,sigma=.2,type="p")
+    binomial_price <- append(binomial_price,binomial_temp)
+    bsm_price <- append(bsm_price,bsm_temp)
+    error <- append(error,bsm_temp-binomial_temp)
+  }
+  print(error)
+  plot(iter,error,xlab = "Number of Iterations",ylab = "Error", type="o",col="blue")
+}
+QuestionD()
 
+```
+```{r, message=FALSE, warning=FALSE}
+Secant_Binomial <- function(S, K, t, r, type, option_price
+                   , x0=0.1, x1=3, tolerance=1e-07, max.iter=10000){
+  N=10
+  x1=.9
+  theta=.00001
+  print(type)
+  fun.x1=BinomialTree(isCall=is.logical(type=="Call"),K=K,Tm =t ,S0 =S ,sig = x1,N =N,r=r)-option_price
+  count=1
+  start.time <- Sys.time()
+  while(abs(fun.x1) > tolerance && count<max.iter) {
+    x2=x1-theta
+    # print(paste(isCall=is.logical(type=="Call"),K,t ,S ,x1,N,r))
+    fun.x1=BinomialTree(isCall=is.logical(type=="Call"),K=K,Tm =t ,S0 =S ,sig = x1,N =N,r=r)-option_price
+    fun.x2=BinomialTree(isCall=is.logical(type=="Call"),K=K,Tm =t ,S0 =S ,sig = x2,N =N,r=r)-option_price
+    x1 <- x1- fun.x1/((fun.x1-fun.x2)/theta)   
+    count <-count+1
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  if(x2<0 || count>=max.iter)
+    return(list(NA,time.taken,count))
+  else
+    return(list(x2,time.taken,count))
+}
+ImpliedVol_Secant_Binomial<-function(symbol="AAPL",option_chain,rate=.75/100){
+  symbol="AAPL"
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"),to=as.Date("2017-02-19"), env = NULL))
+  
+  iv <- {}
+  original_iv <-{}
+  optionName <-{}
+  strike <-{}
+  days_till_expiry <-{}
+  time.taken <- 0
+  iterations <- 0
+  type <-{}
+  bid<-{}
+  ask<-{}
+  for (i in 1:nrow(option_chain)) 
+  {
+    try({
+      #SecantMethodUsingBinomial---
+      secant <- Secant_Binomial(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(option_chain[i,"Strike"]),
+        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+        r = rate,
+        # type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+        type =option_chain[i,"Type"],
+        option_price = as.numeric(option_chain[i,"premium"]))
+      print(secant[1])
+      iv <- append(iv,as.numeric(secant[1]))
+      
+      if(!is.na(secant[1])){
+        time.taken <- as.numeric(secant[2])+time.taken
+        iterations <- as.numeric(secant[3])+iterations
+      }
+      
+      type <- append(type,as.character(option_chain[i,"Type"]))
+      
+      strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
+      
+      optionName <- append(optionName,paste(option_chain[i,"Strike"],"-",
+                                            option_chain[i,"Type"],"Expiring On:",
+                                            option_chain[i,"Expiry"]))
+      days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+      
+      bid<-append(bid,as.numeric(option_chain[i,"Bid"]))
+      ask<-append(ask,as.numeric(option_chain[i,"Ask"]))
+      
+      # original_iv <- append(original_iv,as.numeric(option_chain[i,"Implied.Volatility"]))
+    })
+  }
+  option_chain_df <- data.frame(days_till_expiry,type,optionName,iv,strike,bid,ask)
+  names(option_chain_df)<-c("Days_till_Expiry","Type","Specification","Implied_Volatility","Strike","Bid","Ask")
+  time.taken <- time.taken/as.numeric(colSums(!is.na(option_chain_df))[3])
+  iterations <- iterations/as.numeric(colSums(!is.na(option_chain_df))[3])
+  list(option_chain_df,time.taken,iterations)
+}
+#Importing the data-----
+option_chain_call_csv <- read.csv(file="call.csv",header=TRUE, sep=",")
+option_chain_put_csv <-read.csv(file="put.csv",header=TRUE, sep=",")
+#call.csv and put.csv are available in the project folder
+#Call
+option_chain_call_csv$days_till_expiry <- as.Date(option_chain_call_csv$Expiry,"%m/%d/%Y")-as.Date("2017-02-19")
+#Put
+option_chain_put_csv$days_till_expiry <- as.Date(option_chain_put_csv$Expiry,"%Y/%m/%d")-as.Date("2017-02-19")
+#Calculating the days till expiry
+option_chain_call_csv$premium<-(option_chain_call_csv$Bid+option_chain_call_csv$Ask)/2
 
+option_chain_put_csv$premium<-(option_chain_put_csv$Bid+option_chain_put_csv$Ask)/2
+#-----
+df=ImpliedVol_Secant_Binomial(option_chain = option_chain_call_csv)
+df=as.data.frame(df[1])
+options.df=df[complete.cases(df$Implied_Volatility),]
 
+# BinomialTree(isCall=is.logical('Call'=="Call"),K=130,Tm =t ,S0 =S ,sig = x2,N =N,r=r)
 
+```
 
 
 
