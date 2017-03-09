@@ -176,7 +176,7 @@ ImpliedVol_Secant<-function(symbol="AAPL",option_chain,rate=.75/100){
 ```
 
 ####Importing the data from the CSV files and calculating the IV 
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, include=FALSE}
 option_chain_call_csv <- read.csv(file="call.csv",header=TRUE, sep=",")
 option_chain_put_csv <-read.csv(file="put.csv",header=TRUE, sep=",")
 #call.csv and put.csv are available in the project folder
@@ -198,5 +198,207 @@ df=as.data.frame(df[1])
 options.df_put=df[complete.cases(df$Implied_Volatility),]
 
 ```
+### Calculating the Option Prices Using Trinomial Tree and Black Sholes Merton Formula
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+PriceCalculator<-function(options.df,show=FALSE){
+  eur_trinomial <-{}
+  eur_bsm <-{}
+  ame_trinomial <-{}
+  stock_df<-as.data.frame(getSymbols("AAPL",from = as.Date("2017-01-01"),
+                                     to=as.Date("2017-02-19"), env = NULL))
+  for (i in 1:nrow(options.df)){
+    eur_trinomial <- append(eur_trinomial,TrinomialTree(
+                       isCall = as.logical(options.df[i,"Type"]=="Call"),
+                           K  = as.numeric(options.df[i,"Strike"]),
+                           Tm = as.numeric(options.df[i,"Days_till_Expiry"])/252,
+                           S0 = as.numeric(tail(stock_df,1)[6]),
+                          sig = as.numeric(options.df[i,"Implied_Volatility"]),
+                           r  = .75/100,
+                            N = 200))
+    ame_trinomial <- append(ame_trinomial,TrinomialTree(
+                    isAmerican = TRUE, 
+                        isCall = as.logical(options.df[i,"Type"]=="Call"),
+                            K  = as.numeric(options.df[i,"Strike"]),
+                            Tm = as.numeric(options.df[i,"Days_till_Expiry"])/252,
+                            S0 = as.numeric(tail(stock_df,1)[6]),
+                           sig = as.numeric(options.df[i,"Implied_Volatility"]),
+                            r  = .75/100,
+                             N = 200))
+    eur_bsm <- append(eur_bsm,BSM(
+                      type = ifelse(options.df[i,"Type"]=="Call",'c','p'),
+                        K  = as.numeric(options.df[i,"Strike"]),
+                        t  = as.numeric(options.df[i,"Days_till_Expiry"])/252,
+                        S  = as.numeric(tail(stock_df,1)[6]),
+                     sigma = as.numeric(options.df[i,"Implied_Volatility"]),
+                        r  = .75/100))
+                           
+  }
+  options.df$TrinomialEuropean <- eur_trinomial
+  options.df$TrinomialAmerican <- ame_trinomial
+  options.df$BlackSholesMertonEuropean <- eur_bsm
+  if(show)
+    head(options.df)
+  else
+    return(options.df)
+}
+
+PriceCalculator(options.df_call,show=TRUE)
+option_chain_call <-PriceCalculator(options.df_call)
+option_chain_put <-PriceCalculator(options.df_put)
+
+```
+```{r}
+head(option_chain_call)
+```
+
+### Plotting the Call Option Prices that are expiring in 5 days
+Zoomin to see the difference in prices.
+Also select legend to deactivate and activate individual series of option prices
+``` {r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+# {r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
+
+library(rCharts)
+library(reshape)
+
+option_chain_call$Implied_Volatility<-NULL
+df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
+first <-df_split[1]
+first <- first$`5`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Call Expiring in 5 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+# a$xAxis(title = "Strikes")
+a$data(first)
+a$print(include_assets = TRUE)
+
+
+```
+
+### Plotting the Call Option Prices Expiring in 26 days
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+# {r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+
+df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
+first <-df_split[2]
+first <- first$`26`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Call Expiring in 26 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+# a$xAxis(title = "Strikes")
+a$data(first)
+a$print(include_assets = TRUE)
+
+
+```
+
+### Plotting the Option Prices for the Call Expiring in 152 days
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+
+df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
+first <-df_split[3]
+first <- first$`152`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Call Expiring in 152 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+# a$xAxis(title = "Strikes")
+a$data(first)
+a$print(include_assets = TRUE)
+
+
+```
+
+### Plotting the Put Options Prices that are expiring in 5 days
+Zoomin to see the difference in prices.
+Also select legend to deactivate and activate individual series of option prices
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+option_chain_put$Implied_Volatility<-NULL
+df_split <-split(option_chain_put,option_chain_put$Days_till_Expiry)
+first <-df_split[1]
+first <- first$`5`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Put Options Expiring in 5 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+a$data(first)
+a$print(include_assets = TRUE)
+
+```
+
+### Plotting the Option Prices for the Puts Expiring in 26 days
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+df_split <-split(option_chain_put,option_chain_put$Days_till_Expiry)
+first <-df_split[2]
+first <- first$`26`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Put Options Expiring in 26 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+a$data(first)
+a$print(include_assets = TRUE)
+
+
+```
+
+### Plotting the Option Prices for the Puts Expiring in 152 days
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+
+df_split <-split(option_chain_put,option_chain_put$Days_till_Expiry)
+first <-df_split[3]
+first <- first$`152`
+first[1:2] <- list(NULL)
+rownames(first) <- first$Strike
+first$Strike <- NULL
+
+a <- Highcharts$new()
+a$chart(type = "line")
+a$chart(zoomType="xy")
+a$title(text = "Apple Put Options Expiring in 152 Days")
+a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
+a$yAxis(title = list(text = "Option Price"))
+a$data(first)
+a$print(include_assets = TRUE)
+
+
+```
+
+
+```{r}
+```

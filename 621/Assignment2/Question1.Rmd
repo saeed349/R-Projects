@@ -97,7 +97,7 @@ be way off. Do not forget to download the value of the underlying. For
 each strike price in the data, use the implied vol values in Homework 1 (see
 Problem 1c) and the current short-term interest rate (today the Feds Fund
 rate is r = 0.75%). Calculate the option price (European Calls and Puts)
-using the binomial tree, and compare the results with the Black–Scholes
+using the binomial tree, and compare the results with the Black Scholes
 price. Use at least 200 steps in your tree construction. Treat the options as
 American as well and plot these values side by side with the European and
 Black Scholes values. When you create the plot do not forget to plot the
@@ -279,30 +279,9 @@ Also select legend to deactivate and activate individual series of option prices
 library(rCharts)
 library(reshape)
 
-# option_chain_call$Implied_Volatility<-NULL
-# df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
-# first <-df_split[1]
-# first <- as.data.frame(first)
-
-# first <- first$`5`
-# first[1:2] <- list(NULL)
-# rownames(first) <- first$Strike
-# first$Strike <- NULL
-# head(first)
-# a <- Highcharts$new()
-# a$chart(type = "line")
-# a$chart(zoomType="xy")
-# a$title(text = "Apple Call Expiring in 5 Days")
-# a$xAxis(categories = rownames(first),title = list(text = "Strike"),replace = T)
-# a$yAxis(title = list(text = "Option Price"),replace = T)
-# a$data(first);
-# a
-# a$print(include_assets = TRUE)
-
 option_chain_call$Implied_Volatility<-NULL
 df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
 first <-df_split[1]
-# second <- as.data.frame(first)
 first <- first$`5`
 first[1:2] <- list(NULL)
 rownames(first) <- first$Strike
@@ -321,13 +300,13 @@ a$print(include_assets = TRUE)
 
 ```
 
-### Plotting the Call Option Prices for the Put Expiring in 26 days
+### Plotting the Call Option Prices Expiring in 26 days
 
-```{r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+# {r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
 
 df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
 first <-df_split[2]
-as.data.frame(first)
 first <- first$`26`
 first[1:2] <- list(NULL)
 rownames(first) <- first$Strike
@@ -346,13 +325,12 @@ a$print(include_assets = TRUE)
 
 ```
 
-### Plotting the Option Prices for the Put Expiring in 152 days
+### Plotting the Option Prices for the Call Expiring in 152 days
 
-```{r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
 
 df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
 first <-df_split[3]
-as.data.frame(first)
 first <- first$`152`
 first[1:2] <- list(NULL)
 rownames(first) <- first$Strike
@@ -374,11 +352,10 @@ a$print(include_assets = TRUE)
 ### Plotting the Put Options Prices that are expiring in 5 days
 Zoomin to see the difference in prices.
 Also select legend to deactivate and activate individual series of option prices
-```{r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
 option_chain_put$Implied_Volatility<-NULL
 df_split <-split(option_chain_put,option_chain_put$Days_till_Expiry)
 first <-df_split[1]
-as.data.frame(first)
 first <- first$`5`
 first[1:2] <- list(NULL)
 rownames(first) <- first$Strike
@@ -397,10 +374,9 @@ a$print(include_assets = TRUE)
 
 ### Plotting the Option Prices for the Puts Expiring in 26 days
 
-```{r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
 df_split <-split(option_chain_put,option_chain_put$Days_till_Expiry)
 first <-df_split[2]
-as.data.frame(first)
 first <- first$`26`
 first[1:2] <- list(NULL)
 rownames(first) <- first$Strike
@@ -420,11 +396,10 @@ a$print(include_assets = TRUE)
 
 ### Plotting the Option Prices for the Puts Expiring in 152 days
 
-```{r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
 
 df_split <-split(option_chain_put,option_chain_put$Days_till_Expiry)
 first <-df_split[3]
-as.data.frame(first)
 first <- first$`152`
 first[1:2] <- list(NULL)
 rownames(first) <- first$Strike
