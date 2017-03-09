@@ -14,10 +14,13 @@ knitr::opts_chunk$set(echo = TRUE)
 Implement a trinomial tree to price European, American Call and Put op-
 tions.
 
-```{r}
+```{r, message=FALSE, warning=FALSE, include=FALSE}
 library(quantmod)
 library(rCharts)
 library(reshape)
+```
+
+```{r}
 
 TrinomialTree = function(isCall, isAmerican=FALSE, K,Tm, 
                       S0, r, sig, N, div=0, dx=0,show=FALSE)
@@ -253,7 +256,7 @@ head(option_chain_call)
 ```
 
 ### Plotting the Call Option Prices that are expiring in 5 days
-Zoomin to see the difference in prices.
+Zoom in to see the difference in prices.
 Also select legend to deactivate and activate individual series of option prices
 ``` {r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
 # {r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
@@ -332,7 +335,7 @@ a$print(include_assets = TRUE)
 ```
 
 ### Plotting the Put Options Prices that are expiring in 5 days
-Zoomin to see the difference in prices.
+Zoom in to see the difference in prices.
 Also select legend to deactivate and activate individual series of option prices
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
 option_chain_put$Implied_Volatility<-NULL

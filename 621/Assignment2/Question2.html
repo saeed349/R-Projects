@@ -126,20 +126,7 @@ $(document).ready(function () {
 <div id="a" class="section level3">
 <h3>A)</h3>
 <p>Implement a trinomial tree to price European, American Call and Put op- tions.</p>
-<pre class="r"><code>library(quantmod)</code></pre>
-<pre><code>## Loading required package: xts</code></pre>
-<pre><code>## Loading required package: zoo</code></pre>
-<pre><code>## 
-## Attaching package: 'zoo'</code></pre>
-<pre><code>## The following objects are masked from 'package:base':
-## 
-##     as.Date, as.Date.numeric</code></pre>
-<pre><code>## Loading required package: TTR</code></pre>
-<pre><code>## Version 0.4-0 included new data defaults. See ?getSymbols.</code></pre>
-<pre class="r"><code>library(rCharts)
-library(reshape)
-
-TrinomialTree = function(isCall, isAmerican=FALSE, K,Tm, 
+<pre class="r"><code>TrinomialTree = function(isCall, isAmerican=FALSE, K,Tm, 
                       S0, r, sig, N, div=0, dx=0,show=FALSE)
 {
   # Precompute constants ----
@@ -333,7 +320,7 @@ option_chain_put &lt;-PriceCalculator(options.df_put)</code></pre>
 </div>
 <div id="plotting-the-call-option-prices-that-are-expiring-in-5-days" class="section level3">
 <h3>Plotting the Call Option Prices that are expiring in 5 days</h3>
-<p>Zoomin to see the difference in prices. Also select legend to deactivate and activate individual series of option prices</p>
+<p>Zoom in to see the difference in prices. Also select legend to deactivate and activate individual series of option prices</p>
 <pre class="r"><code># {r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
 
 library(rCharts)
@@ -369,14 +356,14 @@ a$print(include_assets = TRUE)</code></pre>
     height: 400px;
   }  
   </style>
-<div id="chart170358b00b42" class="rChart highcharts">
+<div id="chart24266970a77f" class="rChart highcharts">
 
 </div>
 <script type="text/javascript">
     (function($){
         $(function () {
             var chart = new Highcharts.Chart({
- "dom": "chart170358b00b42",
+ "dom": "chart24266970a77f",
 "width":            800,
 "height":            400,
 "credits": {
@@ -398,7 +385,7 @@ a$print(include_assets = TRUE)</code></pre>
 ],
 "chart": {
  "zoomType": "xy",
-"renderTo": "chart170358b00b42" 
+"renderTo": "chart24266970a77f" 
 },
 "xAxis": [
  {
@@ -545,7 +532,7 @@ a$print(include_assets = TRUE)</code></pre>
 ] 
 } 
 ],
-"id": "chart170358b00b42" 
+"id": "chart24266970a77f" 
 });
         });
     })(jQuery);
@@ -584,14 +571,14 @@ a$print(include_assets = TRUE)</code></pre>
     height: 400px;
   }  
   </style>
-<div id="chart17035705f33e" class="rChart highcharts">
+<div id="chart2426610882e9" class="rChart highcharts">
 
 </div>
 <script type="text/javascript">
     (function($){
         $(function () {
             var chart = new Highcharts.Chart({
- "dom": "chart17035705f33e",
+ "dom": "chart2426610882e9",
 "width":            800,
 "height":            400,
 "credits": {
@@ -613,7 +600,7 @@ a$print(include_assets = TRUE)</code></pre>
 ],
 "chart": {
  "zoomType": "xy",
-"renderTo": "chart17035705f33e" 
+"renderTo": "chart2426610882e9" 
 },
 "xAxis": [
  {
@@ -720,7 +707,7 @@ a$print(include_assets = TRUE)</code></pre>
 ] 
 } 
 ],
-"id": "chart17035705f33e" 
+"id": "chart2426610882e9" 
 });
         });
     })(jQuery);
@@ -757,14 +744,14 @@ a$print(include_assets = TRUE)</code></pre>
     height: 400px;
   }  
   </style>
-<div id="chart1703cbd0c1c" class="rChart highcharts">
+<div id="chart2426771d8ec9" class="rChart highcharts">
 
 </div>
 <script type="text/javascript">
     (function($){
         $(function () {
             var chart = new Highcharts.Chart({
- "dom": "chart1703cbd0c1c",
+ "dom": "chart2426771d8ec9",
 "width":            800,
 "height":            400,
 "credits": {
@@ -786,7 +773,7 @@ a$print(include_assets = TRUE)</code></pre>
 ],
 "chart": {
  "zoomType": "xy",
-"renderTo": "chart1703cbd0c1c" 
+"renderTo": "chart2426771d8ec9" 
 },
 "xAxis": [
  {
@@ -923,7 +910,7 @@ a$print(include_assets = TRUE)</code></pre>
 ] 
 } 
 ],
-"id": "chart1703cbd0c1c" 
+"id": "chart2426771d8ec9" 
 });
         });
     })(jQuery);
@@ -931,7 +918,7 @@ a$print(include_assets = TRUE)</code></pre>
 </div>
 <div id="plotting-the-put-options-prices-that-are-expiring-in-5-days" class="section level3">
 <h3>Plotting the Put Options Prices that are expiring in 5 days</h3>
-<p>Zoomin to see the difference in prices. Also select legend to deactivate and activate individual series of option prices</p>
+<p>Zoom in to see the difference in prices. Also select legend to deactivate and activate individual series of option prices</p>
 <pre class="r"><code>option_chain_put$Implied_Volatility&lt;-NULL
 df_split &lt;-split(option_chain_put,option_chain_put$Days_till_Expiry)
 first &lt;-df_split[1]
@@ -961,14 +948,14 @@ a$print(include_assets = TRUE)</code></pre>
     height: 400px;
   }  
   </style>
-<div id="chart17031ed030e9" class="rChart highcharts">
+<div id="chart2426472359d5" class="rChart highcharts">
 
 </div>
 <script type="text/javascript">
     (function($){
         $(function () {
             var chart = new Highcharts.Chart({
- "dom": "chart17031ed030e9",
+ "dom": "chart2426472359d5",
 "width":            800,
 "height":            400,
 "credits": {
@@ -990,7 +977,7 @@ a$print(include_assets = TRUE)</code></pre>
 ],
 "chart": {
  "zoomType": "xy",
-"renderTo": "chart17031ed030e9" 
+"renderTo": "chart2426472359d5" 
 },
 "xAxis": [
  {
@@ -1262,7 +1249,7 @@ a$print(include_assets = TRUE)</code></pre>
 ] 
 } 
 ],
-"id": "chart17031ed030e9" 
+"id": "chart2426472359d5" 
 });
         });
     })(jQuery);
@@ -1298,14 +1285,14 @@ a$print(include_assets = TRUE)</code></pre>
     height: 400px;
   }  
   </style>
-<div id="chart17032d169f8c" class="rChart highcharts">
+<div id="chart2426256b6f4b" class="rChart highcharts">
 
 </div>
 <script type="text/javascript">
     (function($){
         $(function () {
             var chart = new Highcharts.Chart({
- "dom": "chart17032d169f8c",
+ "dom": "chart2426256b6f4b",
 "width":            800,
 "height":            400,
 "credits": {
@@ -1327,7 +1314,7 @@ a$print(include_assets = TRUE)</code></pre>
 ],
 "chart": {
  "zoomType": "xy",
-"renderTo": "chart17032d169f8c" 
+"renderTo": "chart2426256b6f4b" 
 },
 "xAxis": [
  {
@@ -1489,7 +1476,7 @@ a$print(include_assets = TRUE)</code></pre>
 ] 
 } 
 ],
-"id": "chart17032d169f8c" 
+"id": "chart2426256b6f4b" 
 });
         });
     })(jQuery);
@@ -1525,14 +1512,14 @@ a$print(include_assets = TRUE)</code></pre>
     height: 400px;
   }  
   </style>
-<div id="chart17031d47ee20" class="rChart highcharts">
+<div id="chart242631674092" class="rChart highcharts">
 
 </div>
 <script type="text/javascript">
     (function($){
         $(function () {
             var chart = new Highcharts.Chart({
- "dom": "chart17031d47ee20",
+ "dom": "chart242631674092",
 "width":            800,
 "height":            400,
 "credits": {
@@ -1554,7 +1541,7 @@ a$print(include_assets = TRUE)</code></pre>
 ],
 "chart": {
  "zoomType": "xy",
-"renderTo": "chart17031d47ee20" 
+"renderTo": "chart242631674092" 
 },
 "xAxis": [
  {
@@ -1711,7 +1698,7 @@ a$print(include_assets = TRUE)</code></pre>
 ] 
 } 
 ],
-"id": "chart17031d47ee20" 
+"id": "chart242631674092" 
 });
         });
     })(jQuery);
@@ -1719,21 +1706,21 @@ a$print(include_assets = TRUE)</code></pre>
 </div>
 <div id="c" class="section level2">
 <h2>C)</h2>
-<p>The plot and the data obtained above with the trinomial tree clearly shows that it has more accuracy in terms in stock price and option price lattice. Eventhough no direct comparison of trinomial tree with the binomial tree with the actual stock price is done in this study, we can see that the finer price lattice will give advantage in terms of pricing exotic options and other complex options. And that is also verified by the error with respect to the blacksholes price. Error using Trinomial Tree= .004605 Error using Binomial Tree = 0.00460598068031715</p>
+<p>The plot and the data obtained above with the trinomial tree clearly shows that it has more accuracy in terms in stock price and option price lattice. Eventhough no direct comparison of trinomial tree with the binomial tree with the actual stock price is done in this study, we can see that the finer price lattice will give advantage in terms of pricing exotic options and other complex options. And that is also verified by the error with respect to the blacksholes price calculated in part D) of both the problems</p>
 </div>
 <div id="d" class="section level2">
 <h2>D)</h2>
 <pre class="r"><code>QuestionD&lt;-function(){
   bsm_price &lt;- {}
-  binomial_price &lt;-{}
+  trinomial_price &lt;-{}
   error &lt;-{}
   iter &lt;-c(10, 20, 30, 40, 50, 100, 150, 200, 250, 300, 350, 400)
   for(i in iter){
-    binomial_temp &lt;- TrinomialTree(isCall=FALSE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =i,r=.06)
+    trinomial_temp &lt;- TrinomialTree(isCall=FALSE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =i,r=.06)
     bsm_temp &lt;-BSM(S=100,K=100,t=1,r=.06,sigma=.2,type=&quot;p&quot;)
-    binomial_price &lt;- append(binomial_price,binomial_temp)
+    trinomial_price &lt;- append(trinomial_price,trinomial_temp)
     bsm_price &lt;- append(bsm_price,bsm_temp)
-    error &lt;- append(error,bsm_temp-binomial_temp)
+    error &lt;- append(error,bsm_temp-trinomial_temp)
   }
   print(paste(&quot;Error=&quot;,tail(error,n=1)))
   plot(iter,error,xlab = &quot;Number of Iterations&quot;,ylab = &quot;Error&quot;, type=&quot;o&quot;,col=&quot;blue&quot;)

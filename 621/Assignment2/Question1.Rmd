@@ -9,14 +9,22 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(quantmod)
+library(reshape)
+library(rCharts)
+```
 
 ##A)
 Construct code to calculate option values using an additive binomial tree.For this part you need for versions European and American as well as Call and Put. You may use the same tree construction for all options.
 
 ```{r}
 BinomialTree = function(isCall, isAmerican=FALSE, K=100, Tm=1, 
-                        S0=100, r=0.06, sig=0.2, N=3, u=1.1, d=1/u,div=0,show=FALSE)
+                        S0=100, r=0.06, sig=0.2, N=3,div=0,show=FALSE)
 {
+  
+  
+  # Precompute constants ----
   dt = Tm/N
   nu=r-div-0.5*sig*sig
   dxu=sqrt(sig*sig*dt+((nu*dt)^2))
@@ -24,16 +32,6 @@ BinomialTree = function(isCall, isAmerican=FALSE, K=100, Tm=1,
   pu=0.5+0.5*(nu*dt/dxu)
   pd=1-pu
   disc=exp(-r*dt)
-  #
-  # dpu=disc*pu
-  # dpd=disc*pd
-  # edxud=exp(dxu-dxd)
-  # edxd=exp(dxd)
-
-  # Precompute constants ----
-  dt = Tm/N # diving the time into partition, to get time for each state
-  disc = exp(-r*dt)
-  p = (exp(r*dt)-d)/(u-d) #calculating the probability of up move
   nRows = 2*N+1 #number of rows for the matrix
   nCols = N+1 #number of columns
   cp = ifelse(isCall, 1, -1) # to check ifts a call or a put
@@ -106,7 +104,6 @@ bid-ask values as well
 ### Calculating Implied Volatility
 ```{r pressure, echo=FALSE}
 
-library(quantmod)
 #Black sholes merton pricing function----
 BSM<-function(S, K, t, r, sigma,type){
   d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
@@ -276,8 +273,6 @@ Also select legend to deactivate and activate individual series of option prices
 ``` {r, echo=TRUE, message=FALSE, warning=FALSE, comment=NA, results='asis'}
 # {r,echo=FALSE,results='asis',comment=NA, echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
 
-library(rCharts)
-library(reshape)
 
 option_chain_call$Implied_Volatility<-NULL
 df_split <-split(option_chain_call,option_chain_call$Days_till_Expiry)
@@ -445,4 +440,93 @@ QuestionD()
 
 It is very clear that that as the number of steps in the tree increases, the error comes down. And the error is lowest at the highest number of steps which is 400
 
+##Bonus Question
+Using the binomial tree for American Calls and Puts, calculate the implied
+volatility corresponding to the data you have downloaded in part (b). You
+will need to use the bisection or Newton/secant method of finding roots with
+the respective binomial trees. Compare these values of the implied volatility
+with the volatilities calculated using the usual Black Scholes formula (as in
+Homework 1, Problem 1c). Write detailed observations.
+```{r eval=FALSE}
+Secant_Binomial <- function(S, K, t, r, type, option_price
+                   , x0=0.1, x1=3, tolerance=1e-07, max.iter=10000){
+  x1=3
+  theta=.00001
+  fun.x1=BinomialTree(isCall=is.logical(type=="Call"),K=K,Tm =t ,S0 =S ,sig = x1,N =200,r=r)-option_price
+  count=1
+  start.time <- Sys.time()
+  while(abs(fun.x1) > tolerance && count<max.iter) {
+    x2=x1-theta
+    fun.x1=BinomialTree(isCall=is.logical(type=="Call"),K=K,Tm =t ,S0 =S ,sig = x1,N =200,r=r)-option_price
+    fun.x2=BinomialTree(isCall=is.logical(type=="Call"),K=K,Tm =t ,S0 =S ,sig = x2,N =200,r=r)-option_price
+    x1 <- x1- fun.x1/((fun.x1-fun.x2)/theta)   
+    count <-count+1
+    print(count)
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  if(x2<0 || count>=max.iter)
+    return(list(NA,time.taken,count))
+  else
+    return(list(x2,time.taken,count))
+}
+ImpliedVol_Secant_Binomial<-function(symbol="AAPL",option_chain,rate=.75/100){
+  symbol="AAPL"
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"),to=as.Date("2017-02-19"), env = NULL))
+  
+  iv <- {}
+  original_iv <-{}
+  optionName <-{}
+  strike <-{}
+  days_till_expiry <-{}
+  time.taken <- 0
+  iterations <- 0
+  type <-{}
+  bid<-{}
+  ask<-{}
+  for (i in 1:nrow(option_chain)) 
+  {
+    try({
+      #SecantMethodUsingBinomial---
+      secant <- Secant_Binomial(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(option_chain[i,"Strike"]),
+        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+        r = rate,
+        type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+        option_price = as.numeric(option_chain[i,"premium"]))
+      
+      iv <- append(iv,as.numeric(secant[1]))
+      
+      if(!is.na(secant[1])){
+        time.taken <- as.numeric(secant[2])+time.taken
+        iterations <- as.numeric(secant[3])+iterations
+      }
+      
+      type <- append(type,as.character(option_chain[i,"Type"]))
+      
+      strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
+      
+      optionName <- append(optionName,paste(option_chain[i,"Strike"],"-",
+                                            option_chain[i,"Type"],"Expiring On:",
+                                            option_chain[i,"Expiry"]))
+      days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+      
+      bid<-append(bid,as.numeric(option_chain[i,"Bid"]))
+      ask<-append(ask,as.numeric(option_chain[i,"Ask"]))
+      
+      # original_iv <- append(original_iv,as.numeric(option_chain[i,"Implied.Volatility"]))
+    })
+  }
+  option_chain_df <- data.frame(days_till_expiry,type,optionName,iv,strike,bid,ask)
+  names(option_chain_df)<-c("Days_till_Expiry","Type","Specification","Implied_Volatility","Strike","Bid","Ask")
+  time.taken <- time.taken/as.numeric(colSums(!is.na(option_chain_df))[3])
+  iterations <- iterations/as.numeric(colSums(!is.na(option_chain_df))[3])
+  list(option_chain_df,time.taken,iterations)
+}
+
+df=ImpliedVol_Secant_Binomial(option_chain = option_chain_csv)
+df=as.data.frame(df[1])
+options.df=df[complete.cases(df$Implied_Volatility),]
+```
 
