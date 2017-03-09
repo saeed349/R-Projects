@@ -261,3 +261,7 @@ QuestionD<-function(){
   plot(iter,error)
 }
 QuestionD()
+
+
+# Error using Trinomial Tree= 0.00460599886943669
+# Error using Binomial Tree = 0.00460598068031715

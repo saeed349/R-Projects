@@ -82,9 +82,9 @@ BinomialTree = function(isCall, isAmerican=FALSE, K=100, Tm=1,
 #To display the matrix of Stock process and Option Value
 BinomialTree(isCall=TRUE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =4,r=.06,show = TRUE)
 print(paste("European Call Price",round(BinomialTree(isCall=TRUE,K=100,Tm =1 ,S0 =100 ,sig = .2,N=200,r=.06),4)))
-print(paste("European Call Price",round(BinomialTree(isCall=FALSE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =200,r=.06),4)))
-print(paste("European Call Price",round(BinomialTree(isCall=TRUE,isAmerican = TRUE,K=100,Tm =1 ,S0 =100 ,sig = .2,N=200,r=.06),4)))
-print(paste("European Call Price",round(BinomialTree(isCall=FALSE,isAmerican = TRUE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =200,r=.06),4)))
+print(paste("European Put Price",round(BinomialTree(isCall=FALSE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =200,r=.06),4)))
+print(paste("American Call Price",round(BinomialTree(isCall=TRUE,isAmerican = TRUE,K=100,Tm =1 ,S0 =100 ,sig = .2,N=200,r=.06),4)))
+print(paste("American Put Price",round(BinomialTree(isCall=FALSE,isAmerican = TRUE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =200,r=.06),4)))
 ```
 
 ##B)
@@ -436,7 +436,7 @@ QuestionD<-function(){
     bsm_price <- append(bsm_price,bsm_temp)
     error <- append(error,bsm_temp-binomial_temp)
   }
-  print(error)
+  print(paste("Error=",tail(error,n=1)))
   plot(iter,error,xlab = "Number of Iterations",ylab = "Error", type="o",col="blue")
 }
 QuestionD()

@@ -19,7 +19,7 @@ library(quantmod)
 library(rCharts)
 library(reshape)
 
-TrinomialTree = function(isCall, isAmerican=FALSE, K, Tm, 
+TrinomialTree = function(isCall, isAmerican=FALSE, K,Tm, 
                       S0, r, sig, N, div=0, dx=0,show=FALSE)
 {
   # Precompute constants ----
@@ -76,10 +76,10 @@ TrinomialTree = function(isCall, isAmerican=FALSE, K, Tm,
 }
 
 TrinomialTree(isCall=T, isAmerican=F, K=100, T=1.0, div=0.03, S0=100, sig=0.2, r=0.06, N=5,show = TRUE)
-print(paste("European Call Price=",TrinomialTree(isCall=T, isAmerican=F, K=100, T=1.0, div=0.03, S0=100, sig=0.2, r=0.06, N=200)))
-print(paste("American Call Price=",TrinomialTree(isCall=T, isAmerican=T, K=100, T=1.0, div=0.03, S0=100, sig=0.2, r=0.06, N=200)))
-print(paste("European Put Price=",TrinomialTree(isCall=F, isAmerican=F, K=100, T=1.0, div=0.03, S0=100, sig=0.2, r=0.06, N=200)))
-print(paste("American Put Price=",TrinomialTree(isCall=F, isAmerican=T, K=100, T=1.0, div=0.03, S0=100, sig=0.2, r=0.06, N=200)))
+print(paste("European Call Price=",TrinomialTree(isCall=T, isAmerican=F, K=100, T=1.0, div=0.03, S0=100, sig=0.25, r=0.06, N=200)))
+print(paste("American Call Price=",TrinomialTree(isCall=T, isAmerican=T, K=100, T=1.0, div=0.03, S0=100, sig=0.25, r=0.06, N=200)))
+print(paste("European Put Price=",TrinomialTree(isCall=F, isAmerican=F, K=100, T=1.0, div=0.03, S0=100, sig=0.25, r=0.06, N=200)))
+print(paste("American Put Price=",TrinomialTree(isCall=F, isAmerican=T, K=100, T=1.0, div=0.03, S0=100, sig=0.25, r=0.06, N=200)))
 ```
 
 ### B)
@@ -398,7 +398,29 @@ a$print(include_assets = TRUE)
 
 
 ```
+##C)
+The plot and the data obtained above with the trinomial tree clearly shows that it has more accuracy in terms in stock price and option price lattice. Eventhough no direct comparison of trinomial tree with the binomial tree with the actual stock price is done in this study, we can see that the finer price lattice will give advantage in terms of pricing exotic options and other complex options. And that is also verified by the error with respect to the blacksholes price calculated in part D) of both the problems
 
 
+##D)
 ```{r}
+QuestionD<-function(){
+  bsm_price <- {}
+  trinomial_price <-{}
+  error <-{}
+  iter <-c(10, 20, 30, 40, 50, 100, 150, 200, 250, 300, 350, 400)
+  for(i in iter){
+    trinomial_temp <- TrinomialTree(isCall=FALSE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =i,r=.06)
+    bsm_temp <-BSM(S=100,K=100,t=1,r=.06,sigma=.2,type="p")
+    trinomial_price <- append(trinomial_price,trinomial_temp)
+    bsm_price <- append(bsm_price,bsm_temp)
+    error <- append(error,bsm_temp-trinomial_temp)
+  }
+  print(paste("Error=",tail(error,n=1)))
+  plot(iter,error,xlab = "Number of Iterations",ylab = "Error", type="o",col="blue")
+}
+QuestionD()
+
 ```
+
+It is very clear that that as the number of steps in the tree increases, the error comes down. And the error is lowest at the highest number of steps which is 400
