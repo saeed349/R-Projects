@@ -3,6 +3,85 @@ library(fOptions)
 library(rCharts)
 library(reshape)
 
+#Old method - dumped on mistake----
+BinomialTreeOld = function(isCall, isAmerican=FALSE, K=100, Tm=1, 
+                        S0=100, r=0.06, sig=0.2, N=3, u=1.1, d=1/u,div=0)
+{
+  dt = Tm/N
+  nu=r-div-0.5*sig*sig
+  dxu=sqrt(sig*sig*dt+((nu*dt)^2))
+  dxd=-dxu
+  pu=0.5+0.5*(nu*dt/dxu)
+  pd=1-pu
+  disc=exp(-r*dt)
+  #
+  # dpu=disc*pu
+  # dpd=disc*pd
+  # edxud=exp(dxu-dxd)
+  # edxd=exp(dxd)
+
+  # Precompute constants ----
+  dt = Tm/N # diving the time into partition, to get time for each state
+  disc = exp(-r*dt)
+  p = (exp(r*dt)-d)/(u-d) #calculating the probability of up move
+  nRows = 2*N+1 #number of rows for the matrix
+  nCols = N+1 #number of columns
+  cp = ifelse(isCall, 1, -1) # to check ifts a call or a put
+  
+  # Intialize asset prices  ----
+  # Creating a matrix of nRows*nColumns with zeros and headings 
+  V = S = matrix(0, nrow=nRows, ncol=nCols, dimnames=list(
+    paste("NumUps", N:-N, sep="="), paste("T", 0:N, sep="=")))
+  S[nCols, 1] = S0 # initial stock price
+  
+  # iterating the elements of the matrix in a conical manner starting
+  # from the position of initial stock price
+  # For n=3, S[i,j]= S0, then update the forward diagonal elements 
+  # Code is similar to the one used for trinomial tree
+  for (j in 1:N) {
+    for(i in (nCols-j+1):(nCols+j-1)) {
+      # S[i-1, j+1] = S[i, j] * u
+      # S[i+1, j+1] = S[i, j] * d
+      S[i-1, j+1] = S[i, j]*exp(dxu)
+      S[i+1, j+1] = S[i, j] *exp(dxd)
+    }
+  }
+  for (i in 1:nRows) {
+    V[i, nCols] = max( 0, cp * (S[i, nCols]-K))
+  }
+  # print(S)
+  # V
+  # Step backwards through the tree ----
+  for (j in (nCols-1):1) {
+    for(i in (nCols-j+1):(nCols+j-1)) {
+      # V[i, j] = disc * (p*V[i-1,j+1] + (1-p)*V[i+1,j+1])
+      V[i, j] = disc * (pu*V[i-1,j+1] + pd*V[i+1,j+1])
+      if(isAmerican) {
+        # if american option, then take the Value at each node as the max of the
+        # value of option or the payoff at that period
+        V[i, j] = max(V[i, j], cp * (S[i, j] - K))
+      }
+    } 
+  }
+  return(V[nCols,1])
+}
+
+BinomialTreeOld(isCall=TRUE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =200,r=.06)
+BinomialTreeOld(isCall=FALSE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =200,r=.06)
+BinomialTreeOld(isCall=TRUE,isAmerican = TRUE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =200,r=.06)
+BinomialTreeOld(isCall=FALSE,isAmerican = TRUE,K=100,Tm =1 ,S0 =100 ,sig = .2,N =200,r=.06)
+
+#Black sholes merton pricing function----
+BSM<-function(S, K, t, r, sigma,type){
+  d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
+  d2 <- d1 - sigma * sqrt(t)
+  if (type == "c")
+    result <- S*pnorm(d1) - K*exp(-r*t)*pnorm(d2)
+  if (type == "p")
+    result <- K*exp(-r*t) * pnorm(-d2) - S*pnorm(-d1)
+  return(result)
+}
+
 #Binomial Tree using multiplicative method----
 BinomialTree = function(isCall, isAmerican=FALSE, K, Tm, 
                       S0, r, sig, N,div=0)
@@ -21,7 +100,7 @@ BinomialTree = function(isCall, isAmerican=FALSE, K, Tm,
   edxud=exp(dxu-dxd)
   edxd=exp(dxd)
   
-  #to check if its a call or a put
+  #to check if its a call or a put----
   cp = ifelse(isCall, 1, -1) 
   
   #setting an initial matrix
@@ -257,16 +336,15 @@ option_chain_csv$premium<-(option_chain_csv$Bid+option_chain_csv$Ask)/2
 head(option_chain_csv)
 
 
+
 #Plotting the values as per question B----
-
-
-
 df=0
 df=ImpliedVol_Secant(option_chain = option_chain_csv)
 df=as.data.frame(df[1])
 # option.df=complete.cases(df[,Implied_Volatility])
 options.df=df[complete.cases(df$Implied_Volatility),]
 
+#QuestionC-Calculating tree on option data
 QuestionC<-function(options.df){
   eur_binomial <-{}
   eur_bsm <-{}
@@ -334,7 +412,7 @@ h3
 # h1$print(include_assets = TRUE)
 
 
-#----QuestionD -Error Comparison
+#QuestionD -Error Comparison----
 QuestionD<-function(){
   bsm_price <- {}
   binomial_price <-{}
@@ -393,7 +471,7 @@ ImpliedVol_Secant_Binomial<-function(symbol="AAPL",option_chain,rate=.75/100){
   for (i in 1:nrow(option_chain)) 
   {
     try({
-      #Myoldmethod----
+      #SecantMethodUsingBinomial---
       secant <- Secant_Binomial(
         S = as.numeric(tail(stock_df,1)[6]),
         K = as.numeric(option_chain[i,"Strike"]),
