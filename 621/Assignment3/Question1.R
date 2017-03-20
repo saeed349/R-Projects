@@ -36,13 +36,13 @@ Explicit <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, div, dx){
     for(j in (middleRow+N-1):(middleRow-N+1)) {
       # This inner for loop is only stepping through the 2 to rowsize-1, to avoid the boundaries
       V[j, i] = pu*V[j-1,i+1] + pm*V[j, i+1] + pd*V[j+1,i+1]
-      print(paste(i,j))
+      # print(paste(i,j))
     }
     # Boundary Conditions ----
-    print(paste("First =",lastRow,i,"Last=",firstRow,i))
+    # print(paste("First =",lastRow,i,"Last=",firstRow,i))
     stockTerm = ifelse(isCall, S[1, lastCol]-S[2,lastCol], S[nRows-1,lastCol]-S[nRows,lastCol])
-    print(stockTerm)
-    print(paste("i=",i))
+    # print(stockTerm)
+    # print(paste("i=",i))
     # The last row contains the discounted value of V[lastRow, lastCol] and since 
     # this is zero for Call, we adopt the below method
     V[lastRow,  i] = V[lastRow-1,  i] + ifelse(isCall, 0, stockTerm)
@@ -54,11 +54,12 @@ Explicit <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, div, dx){
       }
   }
   # Return the price ----
-  list(Type = paste( "European", ifelse(isCall, "Call", "Put")),
-       Price = V[middleRow,firstCol], Probs=round(c(pu=pu, pm=pm, pd=pd),4), S=round(S,2), V=round(V,4))
+  # list(Type = paste( "European", ifelse(isCall, "Call", "Put")),
+  #      Price = V[middleRow,firstCol], Probs=round(c(pu=pu, pm=pm, pd=pd),4), S=round(S,2), V=round(V,4))
+  return(V[middleRow,firstCol])
 }
   #Implementation of Explicit----
-Explicit(isAmerican=TRUE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2)
+Explicit(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2)
 #European put value is =5.6217
 #European call value is =8.5455 (verified)
 #Ameican put value = 6.0058 (verified)
@@ -129,9 +130,10 @@ Implicit = function(isAmerican,isCall, K, Tm,S0, r, sig, N, div, dx){
       }
   }
   # Return the price ----
-  list(Type = paste( "American", ifelse(isCall, "Call", "Put")),Price = V[middleRow,firstCol],
-       Probs=round(c(pu=pu, pm=pm, pd=pd),middleRow), pmp=round(pmp,4), pp=round(pp,4),
-       S=round(S,2), V=round(V,middleRow))
+  # list(Type = paste( "American", ifelse(isCall, "Call", "Put")),Price = V[middleRow,firstCol],
+  #      Probs=round(c(pu=pu, pm=pm, pd=pd),middleRow), pmp=round(pmp,4), pp=round(pp,4),
+  #      S=round(S,2), V=round(V,middleRow))
+  return(V[middleRow,firstCol])
 }
   # Solving the tridiagonal matrix---- 
 solveImplicitTridiagonal=function(V, pu, pm, pd, lambdaL, lambdaU, colI)
@@ -172,7 +174,7 @@ Implicit(isAmerican=TRUE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3
 #CHECK FOR EUROPEAN as well and verify. Also check for American Call and verify
 
 
-# Crank Nicholson Method----
+#Crank Nicholson Method----
 CrankNicholson = function(isAmerican, isCall, K, Tm,S0, r, sig, N, div, dx){
   # Crank Nicholson Finite Difference Method: i times, 2*i+1 final nodes
   # Precompute constants ----
@@ -276,3 +278,38 @@ CrankNicholson(isAmerican=TRUE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06,
 
 
 
+
+
+
+#BlackSholes----
+BSM<-function(S, K, t, r, sigma,type){
+  d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
+  d2 <- d1 - sigma * sqrt(t)
+  if (type == "c")
+    result <- S*pnorm(d1) - K*exp(-r*t)*pnorm(d2)
+  if (type == "p")
+    result <- K*exp(-r*t) * pnorm(-d2) - S*pnorm(-d1)
+  return(result)
+}
+BSM(S=100,K=100,t=1,r=.06,sigma=.2,type="c")
+
+#Question1.C----
+# No clue how to do this, the first thing 
+QuestionC<-function(N,sig,Tm,nsd,error){
+  repeat{
+    dt=Tm/N
+    # Nj=((nsd*sig*sqrt(Tm)) / (2*(error-(Tm/N))) ) - .5 # Doesnt work
+    Nj=(sqrt(N)*nsd)/(2*sqrt(3)) -.5
+    dx=(nsd*sig*sqrt(Tm))/(2*Nj+1)
+    print(paste(dt,Nj,dx))
+    N=N+1
+    if(((dx*dx)+dt)<=.001){
+      print(paste("ANSWER:",dt,Nj,dx,N))
+      return(list(dt,Nj,dx,N))
+      break
+    }
+  }
+}
+c=QuestionC(N=3,sig=.2,Tm=1,nsd=6,error = .001)
+
+Implicit(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=1121, div=0.0, dx=0.0103509833901353)
