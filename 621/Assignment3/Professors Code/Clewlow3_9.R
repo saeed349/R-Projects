@@ -1,3 +1,4 @@
+# From textbook, the answer we get for this code is for the american option
 Clewlow3_9 = function(isCall, K=100, Tm=1, 
                       S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2)
 {

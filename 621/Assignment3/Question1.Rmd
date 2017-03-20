@@ -1,0 +1,60 @@
+---
+title: "Assignment 3 - Question1"
+author: "Saeed Rahman"
+date: "March 19, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## A)
+Implement the Explicit Finite Difference method to price both European
+Call and Put options.
+
+```{r}
+
+```
+
+## B)
+Implement the Implicit Finite Difference method to price European Call
+and Put options.
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+## C)
+For both the Explicit and Implicit Finite Difference schemes estimate the
+numbers ∆t, ∆x as well as the total number N j of points on the space grid
+x to obtain a desired error of ε = 0.001.
+
+## D)
+Consider S 0 = 100, K = 100, T = 1 year, σ = 25%, r = 6%, δ = 0.03.
+Calculate and report the price for European Call and Put using both explicit
+and implicit FD methods and the number of steps that you calculated in
+the previous point (part c).
+
+## E)
+Repeat part (c) of this problem but this time get the empirical number of
+iterations. Specifically, obtain the Black Scholes price for the data in (d),
+then do an iterative procedure to figure out the ∆x, ∆t, N , and N j to
+obtain an accuracy of ε = 0.001.
+
+## F)
+Using the parameters from part (d), plot on the same graph the implicit fi-
+nite difference probabilities p u , p m , p d as a function of σ, σ ∈ {0.05, 0.1, 0.15, ..., 0.6}.
+Write detailed comments on your observations.
+
+## G)
+Implement the Crank-Nicolson Finite Difference method and price both
+European Call and Put options. Use the same parameters as in part (d)
+and the same number of steps in the grid. Put the results of the 3 methods
+(EFD, IFD, CNFD) side by side in a table and write your observations.
+
+## H)
+Calculate the hedge sensitivities for the European call option using the
+Explicit Finite Difference method. You need to calculate Delta, Gamma,
+Theta, and Vega.
+

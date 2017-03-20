@@ -6,6 +6,7 @@ Clewlow3_13 = function(isCall, K=100, Tm=1,
   dt = Tm/N
   nu = r - div - 0.5 * sig^2
   edx = exp(dx)
+  # got the constants formulas from clewlow 3.33,3.34,3.35
   pu = -0.5 * dt * ( (sig/dx)^2 + nu/dx )
   pm =  1.0 + dt *   (sig/dx)^2 + r*dt 
   pd = -0.5 * dt * ( (sig/dx)^2 - nu/dx)
@@ -33,6 +34,7 @@ Clewlow3_13 = function(isCall, K=100, Tm=1,
     V[j, lastCol] = max( 0, cp * (S[j, lastCol]-K))
   }
   # Compute Derivative Boundary Conditions ----
+  # From equation 3.38 and 3.39 in Clewlow
   lambdaL = -1 * (S[lastRow-1, lastCol] - S[lastRow,lastCol])
   lambdaU = 0
   
@@ -53,5 +55,6 @@ Clewlow3_13 = function(isCall, K=100, Tm=1,
        S=round(S,2), V=round(V,middleRow))
 }
 
+Clewlow3_13(isCall = FALSE)
 
 
