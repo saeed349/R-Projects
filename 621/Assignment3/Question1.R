@@ -1,4 +1,4 @@
-# Explicit Finite Difference method----
+#Explicit Finite Difference method----
   # Explicit Implementation----
 Explicit <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, div, dx,returnGreeks=FALSE){
   # Finite Difference Method: i times, 2*i+1 final nodes
@@ -239,7 +239,7 @@ CrankNicholson = function(isAmerican, isCall, K, Tm,S0, r, sig, N, div, dx){
     }
   }
   # Return the price ----
-  list(Type = paste( "American", ifelse(isCall, "Call", "Put")),Price = V[middleRow,firstCol],
+  list(Type = paste(ifelse(isCall, "Call", "Put")),Price = V[middleRow,firstCol],
        Probs=round(c(pu=pu, pm=pm, pd=pd), 4), pmp=pmp, pp= pp,
        S=round(S,2), V=round(V,middleRow))
 }
@@ -436,7 +436,10 @@ Vega = (Explicit(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=
 
   #Made an assumption in the cloumn index in the delta calculations
 
-
+library(fOptions)
+sapply(c('delta', 'gamma', 'vega', 'theta', 'rho'), function(greek)
+GBSGreeks(Selection = greek, TypeFlag = "c", S = 100, X = 100,
+              Time = 1, r = 0.06, b = 0.00, sigma = 0.25))
 
   
   
