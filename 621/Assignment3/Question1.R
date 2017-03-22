@@ -347,8 +347,39 @@ Implicit(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N
 
 
 # QuestionE ----
-print(QuestionC(sig=.25,Tm=1,nsd=6,error = .001))
+# print(QuestionC(sig=.25,Tm=1,nsd=6,error = .001))
+QuestionE<-function(error,N=500,Tm,nsd,isAmerican, isCall, K, S0, r, sig, div, dx){
+  BS_price = BSM(type=ifelse(isCall, "c", "p"), K=K, t=Tm, S=S0, r=r, sigma=sig)
+  print(BS_price)
+  repeat{
+    dt=Tm/N
+    Nj=(sqrt(N)*nsd)/(2*sqrt(3)) -.5
+    dx=(nsd*sig*sqrt(Tm))/(2*Nj+1)
+    # print(paste(dt,Nj,dx))
+    N=N+1
+    # print(N)
+    explicit_price=Explicit(isAmerican=FALSE,isCall=isCall, K=K, Tm=Tm, 
+                            S0=S0, r=r, sig=sig, N=N, div=div, dx=dx)
+    print(explicit_price)
+    if(abs(explicit_price-BS_price)<=error){
+      print(paste("ANSWER:",dt,Nj,dx,N))
+      return(list(dt,Nj,dx,N))
+      break
+    }
+  }
+}
+BSM<-function(S, K, t, r, sigma,type){
+  d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
+  d2 <- d1 - sigma * sqrt(t)
+  if (type == "c")
+    result <- S*pnorm(d1) - K*exp(-r*t)*pnorm(d2)
+  if (type == "p")
+    result <- K*exp(-r*t) * pnorm(-d2) - S*pnorm(-d1)
+  return(result)
+}
 
+E=QuestionE(error=0.001,Tm=1,nsd=6,isAmerican=FALSE,isCall=TRUE, 
+            K=100, S0=100, r=0.06, sig=0.25, div=0.03)
 
 
 # QuestionF ----

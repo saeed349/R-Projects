@@ -39,9 +39,9 @@ QuestionA<-function(S, K, t, r, sigma,type){
   return(result)
 }
 
-print(paste("Call Price=",QuestionA(S=100,K=100,t=30/252,r=.05,sigma=.2,type="c")))
+print(paste("Call Price=",QuestionA(S=100,K=100,t=1,r=.06,sigma=.2,type="c")))
       
-print(paste("Put Price=",QuestionA(S=100,K=100,t=30/252,r=.05,sigma=.2,type="p")))
+print(paste("Put Price=",QuestionA(S=100,K=100,t=1,r=.06,sigma=.2,type="p")))
 ```
 
 ### B)
@@ -63,9 +63,9 @@ QuestionB(S=100,K=100,t=30/252,r=.05,sigma=.2)
 ```
 
 ### C)
-The implied volatility is, by denition, the value of  for which the function
-f() = CBSM(S0;K; T; r; ) -???? CM(K; T)
-is zero. Here, we denoted by CM(K; T) and CBSM(S0;K; T; ) the market
+The implied volatility is, by denition, the value of  for which the function
+f() = CBSM(S0;K; T; r; ) -???? CM(K; T)
+is zero. Here, we denoted by CM(K; T) and CBSM(S0;K; T; ) the market
 price of an European Call Option and the Black{Scholes{Merton price,
 respectively. Typically, CM(K; T) is taken as the average of best bid and
 best ask quotes for the respective option from the nancial market. In
@@ -311,7 +311,7 @@ closest to maturity options. What do you observe? Plot all implied
 volatilities for the three dierent maturities on the same plot, where you
 use a dierent color for each maturity. In total there should be 3 sets
 of points plotted with dierent color. (BONUS) Create a 3D plot of the
-same implied vols as a function of both maturity and strike, i.e.: (i;Kj)
+same implied vols as a function of both maturity and strike, i.e.: (i;Kj)
 where i = 1; 2; 3, and j = 1; 2; : : : ; 20.
 
 #### Interactive Chart
@@ -345,7 +345,7 @@ plot3d(x=options.data$Days_till_Expiry,
 ```
 ### F
 (Greeks) Calculate the derivatives of the call option price with respect
-to S (Delta), and  (Vega) and the second derivative with respect to S
+to S (Delta), and  (Vega) and the second derivative with respect to S
 (Gamma). The parameters are as in part a). Approximate these derivatives
 using an approximation of the partial derivatives. Compare the
 numbers obtained by the two methods.
