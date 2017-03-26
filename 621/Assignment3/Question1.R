@@ -472,6 +472,8 @@ sapply(c('delta', 'gamma', 'vega', 'theta', 'rho'), function(greek)
 GBSGreeks(Selection = greek, TypeFlag = "c", S = 100, X = 100,
               Time = 1, r = 0.06, b = 0.00, sigma = 0.25))
 
+Implicit - 107,3800
+Explicit - 74 ,1803
   
   
   

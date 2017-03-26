@@ -27,6 +27,7 @@ Explicit <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, div, dx,returnGree
   pm = 1.0 - dt *   (sig/dx)^2 - r*dt 
   pd = 0.5 * dt * ( (sig/dx)^2 - nu/dx)
   firstRow = 1
+ 
   r = nRows = lastRow = 2*N+1
   firstCol = 1
   middleRow = s = nCols = lastCol = N+1
@@ -87,7 +88,8 @@ Explicit <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, div, dx,returnGree
   #      Price = V[middleRow,firstCol], Probs=round(c(pu=pu, pm=pm, pd=pd),4), S=round(S,2), V=round(V,4))
   return(V[middleRow,firstCol])
 }
-  #Implementation of Explicit----
+  
+#Implementation of Explicit----
 print(paste("European Call Price=",Explicit(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2,returnGreeks = FALSE)))
 print(paste("European Put Price=",Explicit(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2,returnGreeks = FALSE)))
 #European put value is =5.6217
@@ -245,14 +247,18 @@ Calculate and report the price for European Call and Put using both explicit
 and implicit FD methods and the number of steps that you calculated in
 the previous point (part c).
 ```{r}
-print(paste("European Call Price=",Explicit(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))))
+print(paste("European Call Price=",Explicit2(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))))
 # 11.01241
-print(paste("European Put Price=",Explicit(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))))
+print(paste("European Put Price=",Explicit2(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))))
 # 8.144172
-print(paste("American Call Price=",Implicit(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))$Price))
+print(paste("European Call Price=",Implicit2(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))$Price))
 # 11.00983
-print(paste("American Put Price=",Implicit(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))$Price))
+print(paste("European Put Price=",Implicit2(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))$Price))
 # 8.141817
+
+print()
+print(paste("Black Sholes Call Price=",BSM(type = 'c', K=100, t=1, S=100, r=0.06, sig=0.25,div=.03)))
+print(paste("Black Sholes Put Price=",BSM(type = 'p', K=100, t=1, S=100, r=0.06, sig=0.25,div=.03)))
 ```
 
 ## E)
@@ -262,11 +268,13 @@ then do an iterative procedure to figure out the ∆x, ∆t, N , and N j to
 obtain an accuracy of ε = 0.001.
 
 ```{r}
-#Explicit Finite Difference method----
+#Explicit Finite Difference method MODIFIED----
   # Explicit Implementation----
-Explicit2 <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, Nj, div, dx,returnGreeks=FALSE){
+Explicit2 <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, Nj=0, div, dx,returnGreeks=FALSE){
   # Finite Difference Method: i times, 2*i+1 final nodes
   # Precompute constants ----
+  if(Nj!=0)
+    returnGreeks=FALSE
   dt = Tm/N
   nu = r - div - 0.5 * sig^2
   edx = exp(dx)
@@ -275,20 +283,33 @@ Explicit2 <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, Nj, div, dx,retur
   pm = 1.0 - dt *   (sig/dx)^2 - r*dt 
   pd = 0.5 * dt * ( (sig/dx)^2 - nu/dx)
   firstRow = 1
-  r = nRows = lastRow = 2*Nj+1
   firstCol = 1
-  middleRow = s = nCols = lastCol = N+1
   cp = ifelse(isCall, 1, -1)
-  
-  # Intialize asset prices  ----
-  V = S = matrix(0, nrow=nRows, ncol=nCols, dimnames=list(
-    paste("NumUps=",(middleRow-1):-(middleRow-1), sep=""),
-    paste("Time=",round(seq(0, 1, len=nCols),4),sep="")))
-  S[middleRow, firstCol] = S0
-  S[lastRow,lastCol]= S0*exp(-Nj*edx)
-  
-  for(j in lastRow-1:1){
-    S[j,lastCol] = S[j+1,,lastCol] * edx
+  if(Nj!=0){
+    r = nRows = lastRow = 2*Nj+1
+    middleRow = Nj+1
+    nCols = lastCol = N+1
+    # Intialize asset prices  ----
+    V = S = matrix(0, nrow=nRows, ncol=nCols)
+    S[middleRow, firstCol] = S0
+    S[lastRow,lastCol]= S0*exp(-Nj*dx)
+    for(j in (lastRow-1):1){
+      S[j,lastCol] = S[j+1,lastCol] * edx
+    }
+  }
+  else{
+    Nj=N
+    r = nRows = lastRow = 2*Nj+1
+    middleRow = s = nCols = lastCol = N+1
+    V = S = matrix(0, nrow=nRows, ncol=nCols)
+    S[middleRow, firstCol] = S0
+    for (i in 1:(nCols-1)) {
+      for(j in (middleRow-i+1):(middleRow+i-1)) {
+        S[j-1, i+1] = S[j, i] * exp(dx)
+        S[j ,  i+1] = S[j, i] 
+        S[j+1, i+1] = S[j, i] * exp(-dx)
+      }
+    }
   }
   # Intialize option values at maturity ----
   for (j in 1:lastRow) {
@@ -296,7 +317,7 @@ Explicit2 <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, Nj, div, dx,retur
   }
   # Step backwards through the tree ----
   for (i in N:1) {
-    for(j in (middleRow+N-1):(middleRow-N+1)) {
+    for(j in (middleRow+Nj-1):(middleRow-Nj+1)) {
       # This inner for loop is only stepping through the 2 to rowsize-1, to avoid the boundaries
       V[j, i] = pu*V[j-1,i+1] + pm*V[j, i+1] + pd*V[j+1,i+1]
       # print(paste(i,j))
@@ -304,8 +325,6 @@ Explicit2 <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, Nj, div, dx,retur
     # Boundary Conditions ----
     # print(paste("First =",lastRow,i,"Last=",firstRow,i))
     stockTerm = ifelse(isCall, S[1, lastCol]-S[2,lastCol],        S[nRows-1,lastCol]-S[nRows,lastCol])
-    # print(stockTerm)
-    # print(paste("i=",i))
     # The last row contains the discounted value of V[lastRow, lastCol] and since 
     # this is zero for Call, we adopt the below method
     V[lastRow,  i] = V[lastRow-1,  i] + ifelse(isCall, 0, stockTerm)
@@ -316,7 +335,7 @@ Explicit2 <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, Nj, div, dx,retur
         V[j, i] = max(V[j, i], cp * (S[j, lastCol] - K))
       }
   }
-  # Calculating the Greeks and returning ----
+  # Compute the Greeks ----
   if(returnGreeks && isCall){
     delta = (V[middleRow-1,firstCol+1]-V[middleRow+1,firstCol+1])/
       (S[middleRow-1,firstCol+1]-S[middleRow+1,firstCol+1])
@@ -329,13 +348,11 @@ Explicit2 <- function(isAmerican, isCall, K, Tm,S0, r, sig, N, Nj, div, dx,retur
     return(list(Price=V[middleRow,firstCol],Delta=delta,Gamma=gamma,Theta=theta))
   }
   # Return the price ----
-  # list(Type = paste( "European", ifelse(isCall, "Call", "Put")),
-  #      Price = V[middleRow,firstCol], Probs=round(c(pu=pu, pm=pm, pd=pd),4), S=round(S,2), V=round(V,4))
   return(V[middleRow,firstCol])
 }
-  #Implementation of Explicit----
-print(paste("European Call Price=",Explicit(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2,returnGreeks = FALSE)))
-print(paste("European Put Price=",Explicit(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2,returnGreeks = FALSE)))
+#Implementation of Explicit----
+print(paste("European Call Price=",Explicit2(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2,returnGreeks = TRUE))[1])
+print(paste("European Put Price=",Explicit2(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2,returnGreeks = FALSE)))
 #European put value is =5.6217
 #European call value is =8.5455 (verified)
 #Ameican put value = 6.0058 (verified)
@@ -344,19 +361,129 @@ print(paste("European Put Price=",Explicit(isAmerican=FALSE,isCall=FALSE, K=100,
 ```
 
 ```{r}
+#Implicit method MODIFIED----
+  # Implicit Implementation----
+Implicit2 = function(isAmerican,isCall, K, Tm,S0, r, sig, N, div, dx, Nj=0){
+  # Implicit Finite Difference Method: i times, 2*i+1 final nodes
+  # Precompute constants ----
+  dt = Tm/N
+  nu = r - div - 0.5 * sig^2
+  edx = exp(dx)
+  # got the constants formulas from clewlow 3.33,3.34,3.35
+  pu = -0.5 * dt * ( (sig/dx)^2 + nu/dx )
+  pm =  1.0 + dt *   (sig/dx)^2 + r*dt 
+  pd = -0.5 * dt * ( (sig/dx)^2 - nu/dx)
+  firstRow = 1
+    if(Nj!=0){
+    r = nRows = lastRow = 2*Nj+1
+    middleRow = Nj+1
+    nCols = lastCol = N+1
+  }
+  else{
+    Nj=N
+    r = nRows = lastRow = 2*Nj+1
+    middleRow = s = nCols = lastCol = N+1
+  }
+  firstCol = 1
+  cp = ifelse(isCall, 1, -1)
+  
+  # Intialize asset price, derivative price, primed probabilities  ----
+  if(Nj==0){
+    Nj=N
+  }
+  pp=pmp=V = S = matrix(0, nrow=nRows, ncol=nCols)
+  S[middleRow, firstCol] = S0
+  S[lastRow,lastCol]= S0*exp(-Nj*dx)
+  for(j in (lastRow-1):1){
+    S[j,lastCol] = S[j+1,lastCol] * edx
+  }
+  # Intialize option values at maturity ----
+  for (j in firstRow:lastRow) {
+    V[j, lastCol] = max( 0, cp * (S[j, lastCol]-K))
+  }
+  # Compute Derivative Boundary Conditions ----
+  # From equation 3.38 and 3.39 in Clewlow
+  if(isCall){ 
+    lambdaU =(S[1, lastCol] - S[2, lastCol])
+    lambdaL = 0
+  }else{ #clewlows way
+    lambdaU = 0
+    lambdaL = -1 * (S[lastRow-1, lastCol] - S[lastRow,lastCol])
+  }
+  # Step backwards through the lattice ----
+  for (i in (lastCol-1):firstCol) {
+    h = solveImplicitTridiagonal(V, pu, pm, pd, lambdaL, lambdaU, i)
+    pmp[,i] = h$pmp  # collect the pm prime probabilities
+    pp [,i] = h$pp   # collect the p prime probabilities
+    V = h$V
+    # Apply Early Exercise condition ----
+    if(isAmerican)
+      for(j in lastRow:firstRow) {
+        V[j, i] = max(V[j, i], cp * (S[j, lastCol] - K))
+      }
+  }
+  # Return the price ----
+  # list(Type = paste( "American", ifelse(isCall, "Call", "Put")),Price = V[middleRow,firstCol],
+  #      Probs=round(c(pu=pu, pm=pm, pd=pd),middleRow), pmp=round(pmp,4), pp=round(pp,4),
+  #      S=round(S,2), V=round(V,middleRow))
+  return(list(Price=V[middleRow,firstCol],Probs=round(c(pu=pu, pm=pm, pd=pd),middleRow)))
+}
+  # Solving the tridiagonal matrix---- 
+solveImplicitTridiagonal=function(V, pu, pm, pd, lambdaL, lambdaU, colI)
+{
+  # Initalize values ----
+  firstRow = 1
+  secondRow = 2
+  thirdRow = 3
+  lastRow = nRows = nrow(V)
+  lastCol = ncol(V)
+  # Substitute boundary condition at j = -Nj into j = -Nj+1 ----
+  pp = pmp = numeric(nRows)
+  pmp[lastRow-1] = pm + pd
+  pp[lastRow-1]  = V[lastRow-1, lastCol] + pd*lambdaL
+  
+  # Eliminate upper diagonal ----
+  for (j in (lastRow-2):(secondRow)) {
+    pmp[j] = pm - pu*pd/pmp[j+1]
+    pp[j] = V[j, colI+1] - pp[j+1]*pd/pmp[j+1]
+  }
+  # Use boundary conditions at j = Nj and equation at j=Nj-1 ----
+  V[firstRow, colI] = (pp[secondRow] + pmp[secondRow]*lambdaU)/(pu + pmp[secondRow])
+  V[secondRow, colI] = V[firstRow,colI] - lambdaU
+  # Back-substitution ----
+  for(j in thirdRow:lastRow) {
+    V[j, colI] =  (pp[j] -pu*V[j-1, colI])/pmp[j]
+  }
+  V[lastRow, colI] = V[lastRow-1, colI] - lambdaL
+  # Return values ----
+  list(V=V, pmp=pmp, pp=pp)
+}
+  # Testing the implicit method ----
+print(paste("European Call Price=",Implicit2(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2)$Price))
+print(paste("European Put Price=",Implicit2(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2)$Price))
+#Implicit American Put = 4.9221 (verified from textbook)
+#Implicit American Call=7.5608 (not verified)
+#Implicit European Call=7.5608 (not verified)
+#Implicit European Put =4.768 (not verified)
+#CHECK FOR EUROPEAN as well and verify. Also check for American Call and verify
+
+print(paste("European Call Price=",Implicit2(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), Nj=as.integer(c[2]), div=0.03, dx=as.double(c[3]))$Price))
+```
+
+```{r}
 QuestionE<-function(error,N=100,Tm,nsd,isAmerican, isCall, K, S0, r, sig, div, dx){
-  BS_price = BSM(type=ifelse(isCall, "c", "p"), K=K, t=Tm, S=S0, r=r, sigma=sig)
+  BS_price = BSM(type=ifelse(isCall, "c", "p"), K=K, t=Tm, S=S0, r=r, sigma=sig,div=div)
   print(BS_price)
   repeat{
     dt=Tm/N
     Nj=(sqrt(N)*nsd)/(2*sqrt(3)) -.5
     dx=(nsd*sig*sqrt(Tm))/(2*Nj+1)
     # print(paste(dt,Nj,dx))
-    N=N+100
     print(N)
-    explicit_price=Explicit(isAmerican=FALSE,isCall=isCall, K=K, Tm=Tm, 
-                            S0=S0, r=r, sig=sig, N=N, div=div, dx=dx)
+    explicit_price=Explicit2(isAmerican=FALSE,isCall=isCall, K=K, Tm=Tm, 
+                            S0=S0, r=r, sig=sig, N=N, Nj=as.integer(Nj), div=div, dx=dx)
     print(paste("price=",explicit_price))
+    N=N+100
     if(abs(BS_price-explicit_price)<=error){
       print(explicit_price)
       print(paste("ANSWER:",dt,Nj,dx,N))
@@ -365,13 +492,13 @@ QuestionE<-function(error,N=100,Tm,nsd,isAmerican, isCall, K, S0, r, sig, div, d
     }
   }
 }
-BSM<-function(S, K, t, r, sigma,type){
-  d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
+BSM<-function(S, K, t, r, sigma,type,div=0){
+  d1 <- (log(S/K)+(div+sigma^2/2)*t)/(sigma*sqrt(t))
   d2 <- d1 - sigma * sqrt(t)
   if (type == "c")
-    result <- S*pnorm(d1) - K*exp(-r*t)*pnorm(d2)
+    result <- S*exp((div-r)*t)*pnorm(d1) - K*exp(-r*t)*pnorm(d2)
   if (type == "p")
-    result <- K*exp(-r*t) * pnorm(-d2) - S*pnorm(-d1)
+    result <- K*exp(-r*t) * pnorm(-d2) - S*exp((div-r)*t)*pnorm(-d1)
   return(result)
 }
 
@@ -384,15 +511,157 @@ E=QuestionE(error=0.001,Tm=1,nsd=6,isAmerican=FALSE,isCall=TRUE,
 Using the parameters from part (d), plot on the same graph the implicit fi-
 nite difference probabilities p u , p m , p d as a function of σ, σ ∈ {0.05, 0.1, 0.15, ..., 0.6}.
 Write detailed comments on your observations.
+```{r}
+pu = function(sig, dt=1/3, dx=0.2, r=0.06, div=0.03, nu=r-div-0.5*sig^2) {
+  0.5 * dt * ( (sig/dx)^2 + nu/dx )
+}
+
+pm =  function(sig, dt=1/3, dx=0.2, r=0.06, div=0.03, nu=r-div-0.5*sig^2) {
+  1.0 - dt *   (sig/dx)^2 - r*dt 
+}
+pd =  function(sig, dt=1/3, dx=0.2, r=0.06, div=0.03, nu=r-div-0.5*sig^2) {
+  0.5 * dt * ( (sig/dx)^2 - nu/dx)
+}
+
+x = seq(from=0.01, to=0.5, by=0.01)
+ux = pu(x)
+mx = pm(x)
+dx = pd(x)
+theTitle = expression(paste("Explicit Finite Difference Probabilities", 
+                            " as a Function of ", sigma, sep=""))
+xlab1 = expression(paste("Volatility (", sigma, ")", sep=""))
+xlab2 = expression(paste("K = 100, T = 1.0, S =100, r = 6%, ", delta, " = 3%"))
+plot(x, ux, ylim=c(-1,1), type="n", xlab="")
+title(theTitle, cex=3)
+mtext(text=xlab1, side=1, line=2, cex=1.25)
+mtext(text=xlab2, side=1, line=3, cex=1.25)
+lines(x, ux, lwd=2, col=2)
+lines(x, mx, lwd=2, col=3)
+lines(x, dx, lwd=2, col=4)
+abline(h=0)
+legend(0.4, 0.5, legend=c('pu', 'pm', 'pd'), col=2:4, lty=1, lwd=3)
+
+
+```
 
 ## G)
 Implement the Crank-Nicolson Finite Difference method and price both
 European Call and Put options. Use the same parameters as in part (d)
 and the same number of steps in the grid. Put the results of the 3 methods
 (EFD, IFD, CNFD) side by side in a table and write your observations.
+```{r}
+#Crank Nicholson Method----
+CrankNicholson = function(isAmerican, isCall, K, Tm,S0, r, sig, N, div, dx){
+  # Crank Nicholson Finite Difference Method: i times, 2*i+1 final nodes
+  # Precompute constants ----
+  dt = Tm/N
+  nu = r - div - 0.5 * sig^2
+  edx = exp(dx)
+  pu = -0.25     *dt * ( (sig/dx)^2 + nu/dx )  
+  pm =  1.0 + 0.5*dt *   (sig/dx)^2 + 0.5*r*dt 
+  pd = -0.25     *dt * ( (sig/dx)^2 - nu/dx)   
+  firstRow = 1
+  nRows = lastRow = 2*N+1
+  firstCol = 1
+  middleRow = nCols = lastCol = N+1
+  
+  cp = ifelse(isCall, 1, -1)
+  
+  # Intialize asset price, derivative price, primed probabilities  ----
+  pp = pmp = V = S = matrix(0, nrow=nRows, ncol=nCols, dimnames=list(
+    paste("NumUps=",(nCols-1):-(nCols-1), sep=""),
+    paste("Time=",round(seq(0, 1, len=nCols),4),sep="")))
+  S[middleRow, firstCol] = S0
+  for (i in 1:(nCols-1)) {
+    for(j in (middleRow-i+1):(middleRow+i-1)) {
+      S[j-1, i+1] = S[j, i] * exp(dx)
+      S[j ,  i+1] = S[j, i] 
+      S[j+1, i+1] = S[j, i] * exp(-dx)
+    }
+  }
+  # Intialize option values at maturity ----
+  for (j in firstRow:lastRow) {
+    V[j, lastCol] = max( 0, cp * (S[j, lastCol]-K))
+  }
+  # Compute Derivative Boundary Conditions ----
+  if(isCall){
+    lambdaU =(S[1, lastCol] - S[2, lastCol])
+    lambdaL = 0
+  }else{
+    lambdaU = 0
+    lambdaL = round(-1 * (S[lastRow-1, lastCol] - S[lastRow,lastCol]),2)
+  }
+  # Step backwards through the lattice ----
+  for (i in (lastCol-1):firstCol) {
+    h = solveCrankNicholsonTridiagonal(V, pu, pm, pd, lambdaL, lambdaU, i)
+    pmp[,i] = round(h$pmp,4)  # collect the pm prime probabilities
+    pp [,i] = round(h$pp, 4)  # collect the p prime probabilities
+    V = h$V
+    # Apply Early Exercise condition for American Options ----
+    for(j in lastRow:firstRow) {
+      V[j, i] = max(V[j, i], cp * (S[j, lastCol] - K))
+    }
+  }
+  # Return the price ----
+  list(Type = paste(ifelse(isCall, "Call", "Put")),Price = V[middleRow,firstCol],
+       Probs=round(c(pu=pu, pm=pm, pd=pd), 4), pmp=pmp, pp= pp,
+       S=round(S,2), V=round(V,middleRow))
+}
+  #TridiagonalMatrix solver for crank nicholson----
+#it was solveICrankNicholsonTridiagonal
+solveCrankNicholsonTridiagonal=function(V, pu, pm, pd, lambdaL, lambdaU, colI)
+{
+  # Initalize values ----
+  firstRow = 1
+  secondRow = 2
+  thirdRow = 3
+  lastRow = nRows = nrow(V)
+  lastCol = ncol(V)
+  # Substitute boundary condition at j = -Nj into j = -Nj+1 ----
+  pp = pmp = numeric(nRows)
+  pmp[lastRow-1] = pm + pd
+  pp[lastRow-1]  = (- pu   *V[lastRow-2, lastCol] 
+                    -(pm-2)*V[lastRow-1, lastCol]
+                    - pd   *V[lastRow  , lastCol] + pd*lambdaL)
+  # Eliminate upper diagonal ----
+  for (j in (lastRow-2):(secondRow)) {
+    pmp[j] = pm - pu*pd/pmp[j+1]
+    pp[j] = ( - pu   *V[j-1, colI+1] 
+              -(pm-2) *V[j  , colI+1]
+              - pd    *V[j+1, colI+1] 
+              -pp[j+1]*pd/pmp[j+1])
+  }               
+  # Use boundary conditions at j = Nj and equation at j=Nj-1 ----
+  V[firstRow, colI] = (pp[secondRow] + pmp[secondRow]*lambdaU)/(pu + pmp[secondRow])
+  V[secondRow, colI] = V[firstRow,colI] - lambdaU
+  # Back-substitution ----
+  for(j in thirdRow:lastRow) {
+    V[j, colI] =  (pp[j] -pu*V[j-1, colI])/pmp[j]
+  }
+  V[lastRow, colI] = V[lastRow-1, colI] - lambdaL
+  # Return values ----
+  list(V=V, pmp=pmp, pp=pp)
+}
+
+
+  #Implementation of Crank Nicholson----
+print(CrankNicholson(isAmerican=TRUE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, 
+               sig=0.25, N=1128, div=0.03, dx=0.2)$Price)
+
+```
 
 ## H)
 Calculate the hedge sensitivities for the European call option using the
 Explicit Finite Difference method. You need to calculate Delta, Gamma,
 Theta, and Vega.
+```{r}
+sigma=.25
+explicit=Explicit(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=3, div=0.03, dx=0.2,returnGreeks = TRUE)
+delta=explicit$Delta
+gamma=explicit$Gamma
+theta=explicit$Theta
+dsigma = .001* sigma
+Vega = (Explicit(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=sigma+dsigma, N=3, div=0.03, dx=0.2) 
+-Explicit(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=sigma-dsigma, N=3, div=0.03, dx=0.2))/(2*dsigma)
+```
 
