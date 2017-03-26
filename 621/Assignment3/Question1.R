@@ -348,7 +348,7 @@ Implicit(isAmerican=FALSE,isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N
 
 # QuestionE ----
 # print(QuestionC(sig=.25,Tm=1,nsd=6,error = .001))
-QuestionE<-function(error,N=500,Tm,nsd,isAmerican, isCall, K, S0, r, sig, div, dx){
+QuestionE<-function(error,N=100,Tm,nsd,isAmerican, isCall, K, S0, r, sig, div, dx){
   BS_price = BSM(type=ifelse(isCall, "c", "p"), K=K, t=Tm, S=S0, r=r, sigma=sig)
   print(BS_price)
   repeat{
@@ -357,7 +357,7 @@ QuestionE<-function(error,N=500,Tm,nsd,isAmerican, isCall, K, S0, r, sig, div, d
     dx=(nsd*sig*sqrt(Tm))/(2*Nj+1)
     # print(paste(dt,Nj,dx))
     N=N+1
-    # print(N)
+    print(N)
     explicit_price=Explicit(isAmerican=FALSE,isCall=isCall, K=K, Tm=Tm, 
                             S0=S0, r=r, sig=sig, N=N, div=div, dx=dx)
     print(explicit_price)
