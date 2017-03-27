@@ -95,9 +95,6 @@ Explicit<- function(isCall, K, Tm,S0, r, sig, N, Nj=0, div, dx,returnGreeks=FALS
   #Implementation of Explicit----
 print(paste("European Call Price=",Explicit(isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2,returnGreeks = FALSE)))
 print(paste("European Put Price=",Explicit(isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2,returnGreeks = FALSE)))
-#European put value is =5.6217
-#European call value is =8.5455 (verified)
-#Ameican put value = 6.0058 (verified)
 
 
 
@@ -198,13 +195,7 @@ solveImplicitTridiagonal=function(V, pu, pm, pd, lambdaL, lambdaU, colI)
   # Testing the implicit method ----
 print(paste("European Call Price=",Implicit(isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2)$Price))
 print(paste("European Put Price=",Implicit(isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.2, N=3, div=0.03, dx=0.2)$Price))
-#Implicit American Put = 4.9221 (verified from textbook)
-#Implicit American Call=7.5608 (not verified)
-#Implicit European Call=7.5608 (not verified)
-#Implicit European Put =4.768 (not verified)
-#CHECK FOR EUROPEAN as well and verify. Also check for American Call and verify
 
-print(paste("European Call Price=",Implicit(isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), Nj=as.integer(c[2]), div=0.03, dx=as.double(c[3]))$Price))
 ```
 
 ## C)
@@ -229,8 +220,7 @@ QuestionC<-function(N=3,sig,Tm,nsd,error){
 }
   # Testing it for the above conditions 
 c=QuestionC(N=3,sig=.2,Tm=1,nsd=6,error = .001)
-print(c)
-as.double(c[3])
+print(paste("N=",c[4]," Nj=",c[2]," dx=",c[3]))
 ```
 
 ## D)
@@ -238,24 +228,17 @@ Consider S 0 = 100, K = 100, T = 1 year, σ = 25%, r = 6%, δ = 0.03.
 Calculate and report the price for European Call and Put using both explicit
 and implicit FD methods and the number of steps that you calculated in
 the previous point (part c).
-```{r, warning=FALSE}
+```{r}
 explicit_call=Explicit(isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))
 explicit_put=Explicit(isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))
 
 implicit_call=Implicit(isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))$Price
 implicit_put=Implicit(isCall=FALSE, K=100, Tm=1, S0=100, r=0.06, sig=0.25, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))$Price
 print(paste("Explicit European Call Price=",explicit_call))
-# 11.01241
 print(paste("Explicit European Put Price=",explicit_put))
-# 8.144172
 print(paste("Implicit European Call Price=",implicit_call))
-# 11.00983
 print(paste("Implicit European Put Price=",implicit_put))
-# 8.141817
 
-print("")
-print(paste("Black Sholes Call Price=",BSM(type = 'c', K=100, t=1, S=100, r=0.06, sig=0.25,div=.03)))
-print(paste("Black Sholes Put Price=",BSM(type = 'p', K=100, t=1, S=100, r=0.06, sig=0.25,div=.03)))
 ```
 
 ## E)
@@ -272,15 +255,12 @@ QuestionE<-function(error,N=100,Tm,nsd,isAmerican, isCall, K, S0, r, sig, div, d
     dt=Tm/N
     Nj=(sqrt(N)*nsd)/(2*sqrt(3)) -.5
     dx=(nsd*sig*sqrt(Tm))/(2*Nj+1)
-    # print(paste(dt,Nj,dx))
-    print(N)
     if(isExplicit)
       fd_price=Explicit(isCall=isCall, K=K, Tm=Tm, 
                               S0=S0, r=r, sig=sig, N=N, Nj=as.integer(Nj), div=div, dx=dx)
     else
       fd_price=Implicit(isCall=isCall, K=K, Tm=Tm, 
                               S0=S0, r=r, sig=sig, N=N, Nj=as.integer(Nj), div=div, dx=dx)$Price
-    print(paste("price=",fd_price))
     N=N+100
     if(abs(BS_price-fd_price)<=error){
       print(fd_price)
@@ -302,10 +282,10 @@ BSM<-function(S, K, t, r, sigma,type,div=0){
 
 E=QuestionE(error=0.001,Tm=1,nsd=6,isAmerican=FALSE,isCall=TRUE,isExplicit = TRUE,
             K=100, S0=100, r=0.06, sig=0.25, div=0.03)
-print(paste("For Explicit: Nj=",E[2]," dx=",E[3]," N=",E[4]))
+print(paste("For Explicit: Nj=",as.integer(E[2])," dx=",E[3]," N=",E[4]))
 E=QuestionE(error=0.001,Tm=1,nsd=6,isAmerican=FALSE,isCall=TRUE,isExplicit = FALSE,
             K=100, S0=100, r=0.06, sig=0.25, div=0.03)
-print(paste("For Implicit: Nj=",E[2]," dx=",E[3]," N=",E[4]))
+print(paste("For Implicit: Nj=",as.integer(E[2])," dx=",E[3]," N=",E[4]))
 
 ```
 
@@ -342,7 +322,6 @@ lines(x, mx, lwd=2, col=3)
 lines(x, dx, lwd=2, col=4)
 abline(h=0)
 legend(0.4, 0.5, legend=c('pu', 'pm', 'pd'), col=2:4, lty=1, lwd=3)
-
 
 ```
 
@@ -479,8 +458,7 @@ delta=explicit$Delta
 gamma=explicit$Gamma
 theta=explicit$Theta
 dsigma = .001* sigma
-Vega = (Explicit(isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=sigma+dsigma, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))
--Explicit(isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=sigma-dsigma, N=as.integer(c[4]), div=0.03, dx=as.double(c[3])))/(2*dsigma)/100
+Vega = (Explicit(isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=sigma+dsigma, N=as.integer(c[4]), div=0.03, dx=as.double(c[3]))-Explicit(isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=sigma-dsigma, N=as.integer(c[4]), div=0.03, dx=as.double(c[3])))/(2*dsigma)/100
 
 
 print(paste("Delta=",delta,"Gamma=",gamma,"Theta=",theta,"Vega=",Vega))

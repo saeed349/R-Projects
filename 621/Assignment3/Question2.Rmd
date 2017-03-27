@@ -123,13 +123,25 @@ options.df_put=df[complete.cases(df$Implied_Volatility),]
 head(options.df_call)
 head(options.df_put)
 ```
-## Question B to D done in the Below set of Code
 
 ## B)
 Use the Explicit, Implicit, and Crank-Nicolson Finite Difference schemes
 implemented in Problem 1 to price European Call and Put options. Use
 the calculated implied volatility to obtain a space dimension ∆x that insures
 stability and convergence with an error magnitude of no greater than 0.001.
+## C)
+For the European style options above (puts and calls) calculate the corre-
+sponding Delta, Gamma, Theta, and Vega using the Explicit finite difference
+method.
+## D)
+Create a table with the following columns: time to maturity T , strike price
+K, type of the option (Call or Put), ask price A, bid price B, market price
+C M = (A + B)/2, implied volatility from the BSM model σ imp , option price
+calculated with EFD, IFD, and CNFD. Plot on the same graph A, B, C M ,
+and the 3 option prices obtained with finite difference schemes, as a function
+of K and T . What can you observe?
+
+## Question B to D done in the Below set of Code
 
 ### FD Functions
 #### Explicit
@@ -402,7 +414,7 @@ solveCrankNicholsonTridiagonal=function(V, pu, pm, pd, lambdaL, lambdaU, colI)
 
 
 ```
-#### Calclating Price and Greeks of the downloaded option
+#### Calculating Price and Greeks of the downloaded option
 ```{r, warning=FALSE}
 # Calculating option price and dx----
 PriceCalculator<-function(options.df,show=FALSE){
@@ -518,12 +530,13 @@ PriceCalculator<-function(options.df,show=FALSE){
       N = N)$Price)
 
   }
+  options.df$Market.price <- market.price
   options.df$Explicit.price <- explicit.price
   options.df$Implicit.price <- implicit.price
   options.df$CrankNicholson.price <- cranknic.price
   options.df$Delta.explicit = delta_explicit
   options.df$Gamma.explicit = gamma_explicit
-  options.df$Theta.explicit = theta_explicit---
+  options.df$Theta.explicit = theta_explicit
   options.df$Vega.explicit  = vega_explicit
   if(show){
     head(options.df)
@@ -538,20 +551,19 @@ option_chain_call <-PriceCalculator(options.df_call)
 option_chain_put <-PriceCalculator(options.df_put)
 head(option_chain_call)
 ```
+### D)Plot
 
 
-## C)
-For the European style options above (puts and calls) calculate the corre-
-sponding Delta, Gamma, Theta, and Vega using the Explicit finite difference
-method.
+```{r}
 
-Answer: Done in the Above code
-
-
-## D)
-Create a table with the following columns: time to maturity T , strike price
-K, type of the option (Call or Put), ask price A, bid price B, market price
-C M = (A + B)/2, implied volatility from the BSM model σ imp , option price
-calculated with EFD, IFD, and CNFD. Plot on the same graph A, B, C M ,
-and the 3 option prices obtained with finite difference schemes, as a function
-of K and T . What can you observe?
+theTitle = expression(paste("Finite Difference Price Plot 2"))
+            
+xlab1 = expression(paste("Days Till Expiry"))
+plot(option_chain_call$Days_till_Expiry, option_chain_call$Explicit, ylim=c(0,50), type="n", xlab="")
+title(theTitle, cex=5)
+mtext(text=xlab1, side=1, line=2, cex=1.25)
+lines(option_chain_call$Days_till_Expiry, option_chain_call$Implicit, lwd=2, col=2)
+lines(option_chain_call$Days_till_Expiry, option_chain_call$CrankNicholson, lwd=2, col=3)
+lines(option_chain_call$Days_till_Expiry, option_chain_call$Market.price, lwd=2, col=4)
+legend(50, 40, legend=c('Explicit','Implicit','CrankNS','Market Price'), col=2:5, lty=1, lwd=3)
+```
