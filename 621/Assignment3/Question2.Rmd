@@ -1,0 +1,557 @@
+---
+title: "Question2"
+author: "Saeed Rahman"
+date: "March 26, 2017"
+output: html_document
+---
+## A)
+Download Option prices (you can use the Bloomberg Terminal, Yahoo! Fi-
+nance, etc.) for an equity, for 3 different maturities (1 month, 2 months,
+and 3 months) and 10 strike prices. Use the same method from Homework
+1 to calculate the implied volatility. Set the current short-term interest rate
+equal to 0.75%.
+```{r, message=FALSE, warning=FALSE}
+# Retrieving Data and Calculating the Implied Volatility 
+  # Calculation for Implied Volatility
+    # Black sholes merton pricing function ----
+library(quantmod)
+BSM<-function(S, K, t, r, sigma,type){
+  d1 <- (log(S/K)+(r+sigma^2/2)*t)/(sigma*sqrt(t))
+  d2 <- d1 - sigma * sqrt(t)
+  if (type == "c")
+    result <- S*pnorm(d1) - K*exp(-r*t)*pnorm(d2)
+  if (type == "p")
+    result <- K*exp(-r*t) * pnorm(-d2) - S*pnorm(-d1)
+  return(result)
+}
+    # Secant function ----
+Secant <- function(S, K, t, r, type, option_price
+                   , x0=0.1, x1=3, tolerance=1e-07, max.iter=10000){
+  x1=3
+  theta=.00001
+  fun.x1=BSM(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
+  count=1
+  start.time <- Sys.time()
+  while(abs(fun.x1) > tolerance && count<max.iter) {
+    x2=x1-theta
+    fun.x1=BSM(S=S,K=K,t=t,r=r,sigma=x1,type=type)-option_price
+    fun.x2=BSM(S=S,K=K,t=t,r=r,sigma=x2,type=type)-option_price
+    x1 <- x1- fun.x1/((fun.x1-fun.x2)/theta)   
+    count <-count+1
+  }
+  end.time <- Sys.time()
+  time.taken <- end.time - start.time
+  if(x2<0 || count>=max.iter)
+    return(list(NA,time.taken,count))
+  else
+    return(list(x2,time.taken,count))
+}
+
+    #Calculating IV on the option chain using secant method
+ImpliedVol_Secant<-function(symbol="AAPL",option_chain,rate=.75/100){
+  symbol="AAPL"
+  stock_df<-as.data.frame(getSymbols(symbol,from = as.Date("2017-01-01"),to=as.Date("2017-02-19"), env = NULL))
+  
+  iv <- {}
+  original_iv <-{}
+  optionName <-{}
+  strike <-{}
+  days_till_expiry <-{}
+  time.taken <- 0
+  iterations <- 0
+  type <-{}
+  bid<-{}
+  ask<-{}
+  for (i in 1:nrow(option_chain)) 
+  {
+    try({
+      #Myoldmethod----
+      secant <- Secant(
+        S = as.numeric(tail(stock_df,1)[6]),
+        K = as.numeric(option_chain[i,"Strike"]),
+        t = as.numeric(option_chain[i,"days_till_expiry"])/252,
+        r = rate,
+        type = ifelse((option_chain[i,"Type"]=="Call"), "c", "p"),
+        option_price = as.numeric(option_chain[i,"premium"]))
+      
+      iv <- append(iv,as.numeric(secant[1]))
+      
+      if(!is.na(secant[1])){
+        time.taken <- as.numeric(secant[2])+time.taken
+        iterations <- as.numeric(secant[3])+iterations
+      }
+      type <- append(type,as.character(option_chain[i,"Type"]))
+      
+      strike<-append(strike,as.numeric(option_chain[i,"Strike"]))
+      
+      optionName <- append(optionName,paste(option_chain[i,"Strike"],"-",
+                                            option_chain[i,"Type"],"Expiring On:",
+                                            option_chain[i,"Expiry"]))
+      days_till_expiry <- append(days_till_expiry,as.numeric(option_chain[i,"days_till_expiry"]))
+      
+      bid<-append(bid,as.numeric(option_chain[i,"Bid"]))
+      ask<-append(ask,as.numeric(option_chain[i,"Ask"]))
+    })
+  }
+  option_chain_df <- data.frame(days_till_expiry,type,optionName,iv,strike,bid,ask)
+  names(option_chain_df)<-c("Days_till_Expiry","Type","Specification","Implied_Volatility","Strike","Bid","Ask")
+  time.taken <- time.taken/as.numeric(colSums(!is.na(option_chain_df))[3])
+  iterations <- iterations/as.numeric(colSums(!is.na(option_chain_df))[3])
+  list(option_chain_df,time.taken,iterations)
+}    
+  # Retrieving data from CSV and formating data ----
+option_chain_call_csv <- read.csv(file="call.csv",header=TRUE, sep=",")
+option_chain_put_csv <-read.csv(file="put.csv",header=TRUE, sep=",")
+#Call
+option_chain_call_csv$days_till_expiry <- as.Date(option_chain_call_csv$Expiry,"%m/%d/%Y")-as.Date("2017-02-19")
+#Put
+option_chain_put_csv$days_till_expiry <- as.Date(option_chain_put_csv$Expiry,"%Y/%m/%d")-as.Date("2017-02-19")
+#Calculating the days till expiry
+option_chain_call_csv$premium<-(option_chain_call_csv$Bid+option_chain_call_csv$Ask)/2
+
+option_chain_put_csv$premium<-(option_chain_put_csv$Bid+option_chain_put_csv$Ask)/2
+
+df=ImpliedVol_Secant(option_chain = option_chain_call_csv)
+df=as.data.frame(df[1])
+options.df_call=df[complete.cases(df$Implied_Volatility),]
+
+df=ImpliedVol_Secant(option_chain = option_chain_put_csv)
+df=as.data.frame(df[1])
+options.df_put=df[complete.cases(df$Implied_Volatility),]
+```
+```{r}
+head(options.df_call)
+head(options.df_put)
+```
+## Question B to D done in the Below set of Code
+
+## B)
+Use the Explicit, Implicit, and Crank-Nicolson Finite Difference schemes
+implemented in Problem 1 to price European Call and Put options. Use
+the calculated implied volatility to obtain a space dimension ∆x that insures
+stability and convergence with an error magnitude of no greater than 0.001.
+
+### FD Functions
+#### Explicit
+```{r, warning=FALSE}
+# Explicit Implementation----
+Explicit<- function(isCall, K, Tm,S0, r, sig, N, Nj=0, div, dx,returnGreeks=FALSE){
+  # Finite Difference Method: i times, 2*i+1 final nodes
+  # Precompute constants ----
+  if(Nj!=0)
+    returnGreeks=FALSE
+  dt = Tm/N
+  nu = r - div - 0.5 * sig^2
+  edx = exp(dx)
+  # got the constants formulas from clewlow 3.18, 3.19, 3.20
+  pu = 0.5 * dt * ( (sig/dx)^2 + nu/dx )
+  pm = 1.0 - dt *   (sig/dx)^2 - r*dt 
+  pd = 0.5 * dt * ( (sig/dx)^2 - nu/dx)
+  firstRow = 1
+  firstCol = 1
+  cp = ifelse(isCall, 1, -1)
+  if(Nj!=0){
+    r = nRows = lastRow = 2*Nj+1
+    middleRow = Nj+1
+    nCols = lastCol = N+1
+    # Intialize asset prices  ----
+    V = S = matrix(0, nrow=nRows, ncol=nCols)
+    S[middleRow, firstCol] = S0
+    S[lastRow,lastCol]= S0*exp(-Nj*dx)
+    for(j in (lastRow-1):1){
+      S[j,lastCol] = S[j+1,lastCol] * edx
+    }
+  }
+  else{
+    Nj=N
+    r = nRows = lastRow = 2*Nj+1
+    middleRow = s = nCols = lastCol = N+1
+    V = S = matrix(0, nrow=nRows, ncol=nCols)
+    # Intialize asset prices  ----
+    S[middleRow, firstCol] = S0
+    for (i in 1:(nCols-1)) {
+      for(j in (middleRow-i+1):(middleRow+i-1)) {
+        S[j-1, i+1] = S[j, i] * exp(dx)
+        S[j ,  i+1] = S[j, i] 
+        S[j+1, i+1] = S[j, i] * exp(-dx)
+      }
+    }
+  }
+  # Intialize option values at maturity ----
+  for (j in 1:lastRow) {
+    V[j, lastCol] = max( 0, cp * (S[j, lastCol]-K))
+  }
+  # Step backwards through the tree ----
+  for (i in N:1) {
+    for(j in (middleRow+Nj-1):(middleRow-Nj+1)) {
+      # This inner for loop is only stepping through the 2 to rowsize-1, to avoid the boundaries
+      V[j, i] = pu*V[j-1,i+1] + pm*V[j, i+1] + pd*V[j+1,i+1]
+    }
+    # Boundary Conditions ----
+    stockTerm = ifelse(isCall, S[1, lastCol]-S[2,lastCol],        S[nRows-1,lastCol]-S[nRows,lastCol])
+    # The last row contains the discounted value of V[lastRow, lastCol] and since 
+    # this is zero for Call, we adopt the below method
+    V[lastRow,  i] = V[lastRow-1,  i] + ifelse(isCall, 0, stockTerm)
+    # Doing interpolation for Filling the first rows of each column
+    V[firstRow, i] = V[firstRow+1, i] + ifelse(isCall, stockTerm, 0)
+  }
+  # Compute the Greeks ----
+  if(returnGreeks && isCall){
+    delta = (V[middleRow-1,firstCol+1]-V[middleRow+1,firstCol+1])/
+      (S[middleRow-1,firstCol+1]-S[middleRow+1,firstCol+1])
+    delta1 =(V[middleRow-1,firstCol+1]-V[middleRow,firstCol+1])/
+      (S[middleRow-1,firstCol+1]-S[middleRow,firstCol+1])
+    delta2 =(V[middleRow,firstCol+1]-V[middleRow+1,firstCol+1])/
+      (S[middleRow,firstCol+1]-S[middleRow+1,firstCol+1])
+    gamma = 2*(delta1-delta2)/((S[middleRow-1,firstCol+1]-S[middleRow+1,firstCol+1]))
+    theta =((V[middleRow,firstCol+1]-V[middleRow,firstCol])/dt)/252
+    return(list(Price=V[middleRow,firstCol],Delta=delta,Gamma=gamma,Theta=theta))
+  }
+  # Return the price ----
+  return(V[middleRow,firstCol])
+}
+```
+#### Implicit
+```{r, warning=FALSE}
+# Implicit Implementation----
+Implicit = function(isCall, K, Tm,S0, r, sig, N, div, dx, Nj=0){
+# Implicit Finite Difference Method: i times, 2*i+1 final nodes
+# Precompute constants ----
+dt = Tm/N
+nu = r - div - 0.5 * sig^2
+edx = exp(dx)
+# got the constants formulas from clewlow 3.33,3.34,3.35
+pu = -0.5 * dt * ( (sig/dx)^2 + nu/dx )
+pm =  1.0 + dt *   (sig/dx)^2 + r*dt 
+pd = -0.5 * dt * ( (sig/dx)^2 - nu/dx)
+firstRow = 1
+if(Nj!=0){
+  r = nRows = lastRow = 2*Nj+1
+  middleRow = Nj+1
+  nCols = lastCol = N+1
+}
+else{
+  Nj=N
+  r = nRows = lastRow = 2*Nj+1
+  middleRow = s = nCols = lastCol = N+1
+}
+firstCol = 1
+cp = ifelse(isCall, 1, -1)
+
+# Intialize asset price, derivative price, primed probabilities  ----
+pp=pmp=V = S = matrix(0, nrow=nRows, ncol=nCols)
+S[middleRow, firstCol] = S0
+S[lastRow,lastCol]= S0*exp(-Nj*dx)
+for(j in (lastRow-1):1){
+  S[j,lastCol] = S[j+1,lastCol] * edx
+}
+# Intialize option values at maturity ----
+for (j in firstRow:lastRow) {
+  V[j, lastCol] = max( 0, cp * (S[j, lastCol]-K))
+}
+# Compute Derivative Boundary Conditions ----
+# From equation 3.38 and 3.39 in Clewlow
+if(isCall){ 
+  lambdaU =(S[1, lastCol] - S[2, lastCol])
+  lambdaL = 0
+}else{ #clewlows way
+  lambdaU = 0
+  lambdaL = -1 * (S[lastRow-1, lastCol] - S[lastRow,lastCol])
+}
+# Step backwards through the lattice ----
+for (i in (lastCol-1):firstCol) {
+  h = solveImplicitTridiagonal(V, pu, pm, pd, lambdaL, lambdaU, i)
+  pmp[,i] = h$pmp  # collect the pm prime probabilities
+  pp [,i] = h$pp   # collect the p prime probabilities
+  V = h$V
+  # Apply Early Exercise condition ----
+}
+# Return the price ----
+return(list(Price=V[middleRow,firstCol],Probs=round(c(pu=pu, pm=pm, pd=pd),middleRow)))
+}
+# Solving the tridiagonal matrix---- 
+solveImplicitTridiagonal=function(V, pu, pm, pd, lambdaL, lambdaU, colI)
+{
+# Initalize values ----
+firstRow = 1
+secondRow = 2
+thirdRow = 3
+lastRow = nRows = nrow(V)
+lastCol = ncol(V)
+# Substitute boundary condition at j = -Nj into j = -Nj+1 ----
+pp = pmp = numeric(nRows)
+pmp[lastRow-1] = pm + pd
+pp[lastRow-1]  = V[lastRow-1, lastCol] + pd*lambdaL
+
+# Eliminate upper diagonal ----
+for (j in (lastRow-2):(secondRow)) {
+  pmp[j] = pm - pu*pd/pmp[j+1]
+  pp[j] = V[j, colI+1] - pp[j+1]*pd/pmp[j+1]
+}
+# Use boundary conditions at j = Nj and equation at j=Nj-1 ----
+V[firstRow, colI] = (pp[secondRow] + pmp[secondRow]*lambdaU)/(pu + pmp[secondRow])
+V[secondRow, colI] = V[firstRow,colI] - lambdaU
+# Back-substitution ----
+for(j in thirdRow:lastRow) {
+  V[j, colI] =  (pp[j] -pu*V[j-1, colI])/pmp[j]
+}
+V[lastRow, colI] = V[lastRow-1, colI] - lambdaL
+# Return values ----
+list(V=V, pmp=pmp, pp=pp)
+}
+```
+#### CrankNicholson
+```{r, warning=FALSE}
+#Crank Nicholson Method----
+CrankNicholson = function(isAmerican, isCall, K, Tm,S0, r, sig, N, div, dx, Nj=0){
+  # Crank Nicholson Finite Difference Method: i times, 2*i+1 final nodes
+  # Precompute constants ----
+  dt = Tm/N
+  nu = r - div - 0.5 * sig^2
+  edx = exp(dx)
+  pu = -0.25     *dt * ( (sig/dx)^2 + nu/dx )  
+  pm =  1.0 + 0.5*dt *   (sig/dx)^2 + 0.5*r*dt 
+  pd = -0.25     *dt * ( (sig/dx)^2 - nu/dx)   
+  firstRow = 1
+  firstCol = 1
+  if(Nj!=0){
+    r = nRows = lastRow = 2*Nj+1
+    middleRow = Nj+1
+    nCols = lastCol = N+1
+  }
+  else{
+    Nj=N
+    r = nRows = lastRow = 2*Nj+1
+    middleRow = s = nCols = lastCol = N+1
+  }
+  middleRow = nCols = lastCol = Nj+1
+  
+  cp = ifelse(isCall, 1, -1)
+  
+  # Intialize asset price, derivative price, primed probabilities  ----
+  pp=pmp=V = S = matrix(0, nrow=nRows, ncol=nCols)
+  S[middleRow, firstCol] = S0
+  S[lastRow,lastCol]= S0*exp(-Nj*dx)
+  for(j in (lastRow-1):1){
+    S[j,lastCol] = S[j+1,lastCol] * edx
+  }
+  # Intialize option values at maturity ----
+  for (j in firstRow:lastRow) {
+    V[j, lastCol] = max( 0, cp * (S[j, lastCol]-K))
+  }
+  # Compute Derivative Boundary Conditions ----
+  if(isCall){
+    lambdaU =(S[1, lastCol] - S[2, lastCol])
+    lambdaL = 0
+  }else{
+    lambdaU = 0
+    lambdaL = round(-1 * (S[lastRow-1, lastCol] - S[lastRow,lastCol]),2)
+  }
+  # Step backwards through the lattice ----
+  for (i in (lastCol-1):firstCol) {
+    h = solveCrankNicholsonTridiagonal(V, pu, pm, pd, lambdaL, lambdaU, i)
+    pmp[,i] = round(h$pmp,4)  # collect the pm prime probabilities
+    pp [,i] = round(h$pp, 4)  # collect the p prime probabilities
+    V = h$V
+    # Apply Early Exercise condition for American Options ----
+    for(j in lastRow:firstRow) {
+      V[j, i] = max(V[j, i], cp * (S[j, lastCol] - K))
+    }
+  }
+  # Return the price ----
+  list(Type = paste(ifelse(isCall, "Call", "Put")),Price = V[middleRow,firstCol],
+       Probs=round(c(pu=pu, pm=pm, pd=pd), 4), pmp=pmp, pp= pp,
+       S=round(S,2), V=round(V,middleRow))
+}
+#TridiagonalMatrix solver for crank nicholson----
+#it was solveICrankNicholsonTridiagonal
+solveCrankNicholsonTridiagonal=function(V, pu, pm, pd, lambdaL, lambdaU, colI)
+{
+  # Initalize values ----
+  firstRow = 1
+  secondRow = 2
+  thirdRow = 3
+  lastRow = nRows = nrow(V)
+  lastCol = ncol(V)
+  # Substitute boundary condition at j = -Nj into j = -Nj+1 ----
+  pp = pmp = numeric(nRows)
+  pmp[lastRow-1] = pm + pd
+  pp[lastRow-1]  = (- pu   *V[lastRow-2, lastCol] 
+                    -(pm-2)*V[lastRow-1, lastCol]
+                    - pd   *V[lastRow  , lastCol] + pd*lambdaL)
+  # Eliminate upper diagonal ----
+  for (j in (lastRow-2):(secondRow)) {
+    pmp[j] = pm - pu*pd/pmp[j+1]
+    pp[j] = ( - pu   *V[j-1, colI+1] 
+              -(pm-2) *V[j  , colI+1]
+              - pd    *V[j+1, colI+1] 
+              -pp[j+1]*pd/pmp[j+1])
+  }               
+  # Use boundary conditions at j = Nj and equation at j=Nj-1 ----
+  V[firstRow, colI] = (pp[secondRow] + pmp[secondRow]*lambdaU)/(pu + pmp[secondRow])
+  V[secondRow, colI] = V[firstRow,colI] - lambdaU
+  # Back-substitution ----
+  for(j in thirdRow:lastRow) {
+    V[j, colI] =  (pp[j] -pu*V[j-1, colI])/pmp[j]
+  }
+  V[lastRow, colI] = V[lastRow-1, colI] - lambdaL
+  # Return values ----
+  list(V=V, pmp=pmp, pp=pp)
+}
+
+
+
+```
+#### Calclating Price and Greeks of the downloaded option
+```{r, warning=FALSE}
+# Calculating option price and dx----
+PriceCalculator<-function(options.df,show=FALSE){
+  market.price <-{}
+  explicit.price <-{}
+  implicit.price <-{}
+  cranknic.price <-{}
+  delta_explicit <-{}
+  gamma_explicit <-{}
+  theta_explicit <-{}
+  vega_explicit  <-{}
+  stock_df<-as.data.frame(getSymbols("AAPL",from = as.Date("2017-01-01"),
+                                     to=as.Date("2017-02-19"), env = NULL))
+  # Current Price = 135.72
+  # Calculating dx,N for explicit and implicit based on the error ----
+  for (i in 1:nrow(options.df)){
+    dt=0
+    dx=0
+    N=3 #Initial arbitary value
+    Tm = as.numeric(options.df[i,"Days_till_Expiry"])/252
+    sig = as.numeric(options.df[i,"Implied_Volatility"])
+    nsd=3
+    error=3
+    repeat{
+      dt=Tm/N
+      Nj=(sqrt(N)*nsd)/(2*sqrt(3)) -.5
+      dx=(nsd*sig*sqrt(Tm))/(2*Nj+1)
+      N=N+1
+      if(((dx*dx)+dt)<=error){
+        break
+      }
+    }
+    market.price = append(market.price,((as.numeric(options.df[i,"Bid"]))+(as.numeric(options.df[i,"Ask"])))/2)
+    # Calculating the option price using Explicit method ----
+    explicit = Explicit(isCall = as.logical(options.df[i,"Type"]=="Call"),
+                                K  = as.numeric(options.df[i,"Strike"]),
+                                Tm = as.numeric(options.df[i,"Days_till_Expiry"])/252,
+                                S0 = as.numeric(tail(stock_df,1)[6]),
+                               sig = as.numeric(options.df[i,"Implied_Volatility"]),
+                                r  = .75/100,
+                               div = 0,
+                                dx = dx,
+                                 N = N,
+                      returnGreeks = TRUE)
+    explicit.price= append(explicit.price,as.double(explicit['Price']))
+    delta_explicit = append(delta_explicit,explicit['Delta'])
+    gamma_explicit = append(gamma_explicit,explicit['Gamma'])
+    theta_explicit = append(theta_explicit,explicit['Theta'])
+    
+    sigma=as.numeric(options.df[i,"Implied_Volatility"])
+    dsigma = .001* sigma
+    Vega = (Explicit( isCall = as.logical(options.df[i,"Type"]=="Call"),
+                          K  = as.numeric(options.df[i,"Strike"]),
+                          Tm = as.numeric(options.df[i,"Days_till_Expiry"])/252,
+                          S0 = as.numeric(tail(stock_df,1)[6]),
+                         sig = sigma+dsigma,
+                          r  = .75/100,
+                         div = 0,
+                          dx = dx,
+                           N = N) -
+          Explicit(isCall = as.logical(options.df[i,"Type"]=="Call"),
+                   K  = as.numeric(options.df[i,"Strike"]),
+                   Tm = as.numeric(options.df[i,"Days_till_Expiry"])/252,
+                   S0 = as.numeric(tail(stock_df,1)[6]),
+                   sig = sigma-dsigma,
+                   r  = .75/100,
+                   div = 0,
+                   dx = dx,
+                   N = N))/(2*dsigma*100)
+    vega_explicit = append(vega_explicit,Vega)
+    
+    # Calculating the option price using Implicit method ----
+    implicit.price <- append(implicit.price,Implicit(
+      isCall = as.logical(options.df[i,"Type"]=="Call"),
+      K  = as.numeric(options.df[i,"Strike"]),
+      Tm = as.numeric(options.df[i,"Days_till_Expiry"])/252,
+      S0 = as.numeric(tail(stock_df,1)[6]),
+      sig = as.numeric(options.df[i,"Implied_Volatility"]),
+      r  = .75/100,
+      div = 0,
+      dx = dx,
+      N = N)$Price)
+    
+    
+    #calculating dx and N using convergence condition for crank nicholson----
+    dt=0
+    dx=0
+    N=3 #Initial arbitary value
+    Tm = as.numeric(options.df[i,"Days_till_Expiry"])/252
+    sig = as.numeric(options.df[i,"Implied_Volatility"])
+    nsd=3
+    error=3
+    repeat{
+      dt=Tm/N
+      Nj=(sqrt(N)*nsd)/(2*sqrt(3)) -.5
+      dx=(nsd*sig*sqrt(Tm))/(2*Nj+1)
+      N=N+1
+      if(((dx*dx)+(dt/2))<=error){
+        break
+      }
+    }
+    
+    # Calculating the option price using Cranknicholson method ----
+    cranknic.price <- append(cranknic.price,CrankNicholson(
+      isCall = as.logical(options.df[i,"Type"]=="Call"),
+      K  = as.numeric(options.df[i,"Strike"]),
+      Tm = as.numeric(options.df[i,"Days_till_Expiry"])/252,
+      S0 = as.numeric(tail(stock_df,1)[6]),
+      sig = as.numeric(options.df[i,"Implied_Volatility"]),
+      r  = .75/100,
+      div = 0,
+      dx = dx,
+      N = N)$Price)
+
+  }
+  options.df$Explicit.price <- explicit.price
+  options.df$Implicit.price <- implicit.price
+  options.df$CrankNicholson.price <- cranknic.price
+  options.df$Delta.explicit = delta_explicit
+  options.df$Gamma.explicit = gamma_explicit
+  options.df$Theta.explicit = theta_explicit---
+  options.df$Vega.explicit  = vega_explicit
+  if(show){
+    head(options.df)
+    return(options.df)
+  }
+  else
+    return(options.df)
+}
+
+# price=PriceCalculator(options.df_call,show=TRUE)
+option_chain_call <-PriceCalculator(options.df_call)
+option_chain_put <-PriceCalculator(options.df_put)
+head(option_chain_call)
+```
+
+
+## C)
+For the European style options above (puts and calls) calculate the corre-
+sponding Delta, Gamma, Theta, and Vega using the Explicit finite difference
+method.
+
+Answer: Done in the Above code
+
+
+## D)
+Create a table with the following columns: time to maturity T , strike price
+K, type of the option (Call or Put), ask price A, bid price B, market price
+C M = (A + B)/2, implied volatility from the BSM model σ imp , option price
+calculated with EFD, IFD, and CNFD. Plot on the same graph A, B, C M ,
+and the 3 option prices obtained with finite difference schemes, as a function
+of K and T . What can you observe?
