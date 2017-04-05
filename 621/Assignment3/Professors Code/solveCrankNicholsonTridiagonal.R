@@ -1,4 +1,5 @@
-solveICrankNicholsonTridiagonal=function(V, pu, pm, pd, lambdaL, lambdaU, colI)
+#it was solveICrankNicholsonTridiagonal
+solveCrankNicholsonTridiagonal=function(V, pu, pm, pd, lambdaL, lambdaU, colI)
 {
   # Initalize values ----
   firstRow = 1

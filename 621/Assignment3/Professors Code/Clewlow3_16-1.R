@@ -53,4 +53,5 @@ Clewlow3_16 = function(isCall, K=100, Tm=1,
        S=round(S,2), V=round(V,middleRow))
 }
 
+Clewlow3_16(isCall = TRUE)
 

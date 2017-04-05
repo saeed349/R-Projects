@@ -470,8 +470,11 @@ Vega = (Explicit(isAmerican=FALSE,isCall=TRUE, K=100, Tm=1, S0=100, r=0.06, sig=
 library(fOptions)
 sapply(c('delta', 'gamma', 'vega', 'theta', 'rho'), function(greek)
 GBSGreeks(Selection = greek, TypeFlag = "c", S = 100, X = 100,
-              Time = 1, r = 0.06, b = 0.00, sigma = 0.25))
+              Time = 1, r = 0.06, b = 0.03, sigma = 0.25))
 
+# Question 1.E // Jacob chettans answer
+# Implicit - 107,3800
+# Explicit - 74 ,1803
   
   
   
