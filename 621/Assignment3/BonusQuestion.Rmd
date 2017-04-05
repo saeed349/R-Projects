@@ -1,0 +1,120 @@
+---
+title: "BonusQuestion"
+author: "Saeed Rahman"
+date: "March 30, 2017"
+output: html_document
+---
+
+### Question C)
+Price an American Up and Out put option using a trinomial
+tree
+```{r setup, include=FALSE}
+BinomialTreeExotic = function(isCall, isAmerican=FALSE, K=100, Tm=1, 
+                           S0=100, r=0.06, sig=0.2, N=3,div=0,type,barrier=100)
+{
+  rebate=1
+  # Precompute constants ----
+  dt = Tm/N 
+  nu = r - div - 0.5 * sig^2
+  dx=.2524
+  if(dx==0)
+    # dx=sig*sqrt(3*T/N)
+    dx = sig*sqrt(3*dt) #Condition in the question
+  pu = 0.5 * ( (sig^2*dt + nu^2 *dt^2)/dx^2 + nu*dt/dx ) #up move probability
+  pm = 1.0 -   (sig^2*dt + nu^2 *dt^2)/dx^2 #Side move probability
+  pd = 0.5 * ( (sig^2*dt + nu^2 *dt^2)/dx^2 - nu*dt/dx ) # down move probability.
+  #pu+pm+pd not necessarily equal to 1
+  disc = exp(-r*dt) #Discount rate
+  nRows = 2*N+1 #number of rows 
+  nCols = N+1 #number of columns
+  cp = ifelse(isCall, 1, -1) #to check if call or put
+  # Intialize an empty matrix  ----
+  V = S = matrix(0, nrow=nRows, ncol=nCols, dimnames=list(
+    paste("NumUps", N:-N, sep="="), paste("T", 0:N, sep="=")))
+  #Initial stock value
+  S[nCols, 1] = S0
+  
+  # iterating the elements of the matrix in a conical manner starting
+  # from the position of initial stock price
+  # For n=3, S[i,j]= S0, then update the forward diagonal elements 
+  # Code is similar to the one used for trinomial tree
+  for (j in 1:N) {
+    for(i in (nCols-j+1):(nCols+j-1)) {
+      S[i-1, j+1] = S[i, j] * exp(dx)
+      S[i ,  j+1] = S[i, j] 
+      S[i+1, j+1] = S[i, j] * exp(-dx)
+    }
+  }
+  # print(S)
+  for (i in 1:nRows) {
+    if(type=="UO"){
+      V[i,nCols] <- ifelse((S[i,nCols]<barrier),max(0,cp * (S[i, nCols]-K)),0)
+    }
+    else if(type=="DO")
+      V[i,nCols] <- ifelse((S[i,nCols]>barrier),max(0,cp * (S[i, nCols]-K)),0)
+  }
+  # print(V)
+  # Step backwards through the tree ----
+  for (j in (nCols-1):1) {
+    for(i in (nCols-j+1):(nCols+j-1)) {
+      V[i, j] = disc * (pu*V[i-1,j+1] + pd*V[i+1,j+1])
+      if(isAmerican)
+        # if american option, then take the Value at each node as the max of the
+        # value of option or the payoff at that period
+        V[i, j] = max(V[i, j], cp * (S[i, j] - K))
+      if(type=="UO" && S[i,j]>=barrier){
+        V[i,j] <- rebate
+      }
+      else if(type=="DO" && S[i,j]<=barrier){
+        V[i,j] <- rebate
+      }
+    } 
+  }
+  # print(V)
+  print(V)
+  return(V[nCols,1])
+}
+
+Barrier<-function(isCall, isAmerican, K, Tm,S0, r, sig, N, div, type, barrier){
+  if (type=="UO" || type=="DO"){
+    return(BinomialTreeExotic(isCall=isCall, isAmerican=isAmerican, K=K, Tm=Tm, 
+                           S0=S0, r=r, sig=sig, N=N,div=div,type=type,barrier=barrier))
+   }
+  else if(type=="UI"){
+    binomial_price <- BinomialTree(isCall=isCall, isAmerican=isAmerican, K=K, Tm=Tm, 
+                         S0=S0, r=r, sig=sig, N=N,div=div)
+    exotic_price <-BinomialTreeExotic(isCall=isCall, isAmerican=isAmerican, K=K, Tm=Tm, 
+                         S0=S0, r=r, sig=sig, N=N,div=div,type="UO",barrier=barrier)
+    return(binomial_price-exotic_price)
+  }
+  else if(type=="DI"){
+    binomial_price <- BinomialTree(isCall=isCall, isAmerican=isAmerican, K=K, Tm=Tm, 
+                         S0=S0, r=r, sig=sig, N=N,div=div)
+    exotic_price <-BinomialTreeExotic(isCall=isCall, isAmerican=isAmerican, K=K, Tm=Tm, 
+                         S0=S0, r=r, sig=sig, N=N,div=div,type="DO",barrier=barrier)
+    return(binomial_price-exotic_price)
+  }
+}
+print(paste("Price of European Up and Out call=",Barrier(isCall=FALSE,isAmerican = TRUE ,K=100,Tm =1 ,S0 =100 ,sig = .2, N =200, r=.01,type ="UO",barrier = 11, div=0)))  
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
