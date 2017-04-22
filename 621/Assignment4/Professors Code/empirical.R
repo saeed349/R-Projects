@@ -12,7 +12,7 @@ fx <- expression( theta[1]+theta[2]*x ) ## drift coefficient of CKLS model
 gx <- expression( theta[3]*x^theta[4] ) ## diffusion coefficient of CKLS model
 pmle <- eval(formals(fitsde.default)$pmle)
 fitres <- lapply(1:4, function(i) fitsde(X,drift=fx,diffusion=gx,pmle=pmle[i],
-                                         start = list(theta1=1,theta2=1,theta3=1,theta4=1)))
+                                         start = list(theta1=1,theta2=1,theta3=1)))
 Coef <- data.frame(do.call("cbind",lapply(1:4,function(i) coef(fitres[[i]]))))
 Info <- data.frame(do.call("rbind",lapply(1:4,function(i) logLik(fitres[[i]]))),
                    do.call("rbind",lapply(1:4,function(i) AIC(fitres[[i]]))),

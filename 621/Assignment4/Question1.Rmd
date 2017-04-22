@@ -1,44 +1,74 @@
-library(Sim.DiffProc)
-library(Ecdat)
-library(yuima)
+---
+title: "Question1"
+author: "Saeed Rahman"
+date: "April 21, 2017"
+output: html_document
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1)
+Decide which of the models could be the source of each of the appropriate
+columns in the dataset. Use the AIC criterion and read the document
+posted in the course site.
+
+### Getting the data
+```{r}
 df=read.csv(file="sample_data.csv",header=TRUE, sep=",")
 
-X=ts(df[1])
+head(df)
 
-# plot(X)
-# 
+stock1=ts(df[1])
+stock2=ts(df[2])
+stock3=ts(df[3])
+stock4=ts(df[4])
+stock5=ts(df[5])
 
-#Part1----
+```
 
-Best.fit<-function(data)
+## Defining the function to fit the 5 models defined below
+
+![Diff SDEs](Capture.png)
+``
+
+
+```{r, warning=FALSE}
+library(Sim.DiffProc)
+library(Ecdat)
+
+pmle=eval(formals(fitsde.default)$pmle)
+print("We'll use euler method for our Maximum Likelyhood")
+
+Best.fit<-function(data,pmle)
 {
   #model1
   fx1 <- expression( theta[1]*x )
   gx1 <- expression( theta[2]*x^theta[3] )
   mod1 <- fitsde(data=data,drift=fx1,diffusion=gx1,start = 
-                   list(theta1=1, theta2=1,theta3=1),pmle="euler")
+                   list(theta1=1, theta2=1,theta3=1),pmle=pmle)
   # competing model 2
   fx2 <- expression( theta[1]+theta[2]*x )
   gx2 <- expression( theta[3]*x^theta[4] )
   mod2 <- fitsde(data=data,drift=fx2,diffusion=gx2,start = 
-                   list(theta1=1, theta2=1,theta3=1,theta4=1),pmle="euler")
+                   list(theta1=1, theta2=1,theta3=1,theta4=1),pmle=pmle)
   # competing model 3
   fx3 <- expression( theta[1]+theta[2]*x )
   gx3 <- expression( theta[3]*sqrt(x) )
   mod3 <- fitsde(data=data,drift=fx3,diffusion=gx3,start = 
-                   list(theta1=1, theta2=1,theta3=1),pmle="euler")
+                   list(theta1=1, theta2=1,theta3=1),pmle=pmle)
   ## competing model 4
   fx4 <- expression( theta[1] )
   gx4 <- expression( theta[2]*x^theta[3] )
   mod4 <- fitsde(data=data,drift=fx4,diffusion=gx4,start = 
-                   list(theta1=1, theta2=1,theta3=1),pmle="euler")
+                   list(theta1=1, theta2=1,theta3=1),pmle=pmle)
   
   ## competing model 5
   fx5 <- expression( theta[1]*x )
   gx5 <- expression(theta[2] + (theta[3]*x^theta[4]) )
   mod5 <- fitsde(data=data,drift=fx5,diffusion=gx5,start = 
-                   list(theta1=1, theta2=1,theta3=1, theta4=1),pmle="euler")
+                   list(theta1=1, theta2=1,theta3=1, theta4=1),pmle=pmle)
   #  Computes AIC
   AIC <- c(AIC(mod1),AIC(mod2),AIC(mod3),AIC(mod4),AIC(mod5))
   Test <- data.frame(AIC,row.names = c("Model 1","Model 2","Model 3", "Model 4","Model 5"))
@@ -52,27 +82,13 @@ Best.fit<-function(data)
                       row.names = c("Model1","Model2","Model3","Model4","Model5"))
   
   list('best.mode'=Bestmod,'parms'=Parms,'AIC.results'=Test)
-  
-}
-
-fit = Best.fit(data = X)
-
-#Part2----
-Diff.mle <-function(fx,gx,data)
-{
-  pmle <- eval(formals(fitsde.default)$pmle)
-  fitres <- lapply(1:4, function(i) fitsde(data=data,drift=fx,diffusion=gx,pmle=pmle[i],
-                                           start = list(theta1=1,theta2=1,theta3=1,theta4=1)))
-  Coef <- data.frame(do.call("cbind",lapply(1:4,function(i) coef(fitres[[i]]))))
-  Info <- data.frame(do.call("rbind",lapply(1:4,function(i) AIC(fitres[[i]]))),
-                     row.names=pmle)
-  names(Coef) <- c(pmle)
-  names(Info) <- c("AIC")
-  list("Info"=Info,"Coef"=Coef)
 }
 
 
-fx <- expression( theta[1]*x)
-gx <- expression( theta[2]*x^theta[3] )
+```
+### For Stock 1
 
-ls=Diff.mle(fx=fx,gx=gx,data = X)
+```{r, warning=FALSE}
+fit1=Best.fit(data =stock1,pmle = pmle[1])
+print(paste("Best model =",fit1$best.mode))
+```
