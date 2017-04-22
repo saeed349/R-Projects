@@ -138,15 +138,18 @@ r = param2(2);
 v = param2(3);
 
 oldMK    = xlsread('swap_data.xlsx', 'Sheet1', 'C19:U19');
-oldMV    = xlsread('swap_data.xlsx', 'Sheet1', 'C20:U20');
+oldMV    = xlsread('swap_data.xlsx', 'Sheet1', 'C4:U4');
 % Input the Maturity (T), ATM Strike (F), ATM Vol
-T      = xlsread('swap_data.xlsx', 'Sheet1', 'A20');
-F      = xlsread('swap_data.xlsx', 'Sheet1', 'B23');
+T      = xlsread('swap_data.xlsx', 'Sheet1', 'A4');
+F      = xlsread('swap_data.xlsx', 'Sheet1', 'B6');
 oldMV = oldMV(k,:);
 T = T(k);
+% Select only non-blank entries
 Index = find(~isnan(oldMV));
 MV = oldMV(Index);
 MK = oldMK(Index);
+
+% Create a grid of strikes for the SABR vols
 MK2 = oldMK; 
 
 % Create the SABR curve based on these parameters.
@@ -163,6 +166,6 @@ disp(P)
 figure
 plot(MK2, Vol2, 'b-',  oldMK, oldMV, 'kx-')
 
-legend('SABR vol for 12 year maturity','Original Vol for 12 year maturity')
+legend('SABR vol for 3 year maturity','Original Vol for 3 year maturity')
 legend('boxoff')
-title('BETA=.4')
+title('BETA=.7')
