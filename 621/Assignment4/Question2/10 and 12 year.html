@@ -1,0 +1,512 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- saved from url=(0112)file:///C:/Users/saeed/OneDrive/Documents/GitHub%20Repositaries/R/621/Assignment4/Question2/html/SABR_model.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>SABR_model</title><meta name="generator" content="MATLAB 8.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2017-04-23"><meta name="DC.source" content="SABR_model.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput">clc; clear;
+
+
+fprintf(<span class="string">'\n\n%%--------------------------------Part1--------------------------------%%\n'</span>)
+
+k = 1;
+<span class="comment">% Input the market strikes and vols, and the vendor SABR volatilities</span>
+oldMK    = xlsread(<span class="string">'swap_data.xlsx'</span>, <span class="string">'Sheet1'</span>, <span class="string">'C3:U3'</span>);
+oldMV    = xlsread(<span class="string">'swap_data.xlsx'</span>, <span class="string">'Sheet1'</span>, <span class="string">'C4:U4'</span>);
+
+
+<span class="comment">% Input the Maturity (T), ATM Strike (F), ATM Vol</span>
+T      = xlsread(<span class="string">'swap_data.xlsx'</span>, <span class="string">'Sheet1'</span>, <span class="string">'A4'</span>);
+F      = xlsread(<span class="string">'swap_data.xlsx'</span>, <span class="string">'Sheet1'</span>, <span class="string">'B6'</span>);
+
+oldMV = oldMV(k,:);
+T = T(k);
+<span class="comment">% Select only non-blank entries</span>
+Index = find(~isnan(oldMV));
+MV = oldMV(Index);
+MK = oldMK(Index);
+
+<span class="comment">% Create a grid of strikes for the SABR vols</span>
+MK2 = oldMK;
+
+<span class="comment">%beta</span>
+b = .5;
+
+<span class="comment">% Define the starting values and options for fminsearch</span>
+
+options = optimset(<span class="string">'MaxFunEvals'</span>, 1e5, <span class="string">'TolFun'</span>, 1e-8, <span class="string">'TolX'</span>, 1e-10);
+start = [.3 ,.3 ,.2];
+[param1, feval] = fminsearch(@(par)EstimateAllParameters(par, MK, MV, F, T, b), start, options);
+
+a = param1(1);
+r = param1(2);
+v = param1(3);
+
+<span class="comment">% Create the SABR curve based on these parameters.</span>
+<span class="keyword">for</span> j=1:length(MK2);
+	Vol1(j) = SABRvol(a, b, r, v, F, MK2(j), T);
+<span class="keyword">end</span>
+<span class="comment">% Plot the results of both SABR curves against the curve from the market.</span>
+
+<span class="comment">% 'alpha parameter     ::',a</span>
+<span class="comment">% 'beta parameter      ::',b</span>
+<span class="comment">% 'rho parameter       ::',r</span>
+<span class="comment">% 'vol of vol parameter::',v</span>
+
+X = sprintf(<span class="string">'Beta=%f, Alpha=%f, Rho=%f, Vol=%f'</span>,b,a,r,v);
+disp(X)
+P=sprintf(<span class="string">'Mean Squared Error=%f'</span>,immse(Vol1,oldMV));
+disp(P)
+
+figure
+plot(MK2, Vol1, <span class="string">'g-'</span>,  oldMK, oldMV, <span class="string">'kx-'</span>);
+legend(<span class="string">'SABR vol for 10 year maturity'</span>,<span class="string">'Original Vol for 10 year maturity'</span>)
+legend(<span class="string">'boxoff'</span>)
+title(<span class="string">'Part 1 - BETA=.5'</span>)
+
+fprintf(<span class="string">'\n\n\n%%--------------------------------Part2--------------------------------%%\n'</span>)
+
+<span class="comment">%--------------beta=.7----------</span>
+b=.7;
+start = [.3 ,.3 ,.2];
+[param2, feval] = fminsearch(@(par)EstimateAllParameters(par, MK, MV, F, T, b), start, options);
+
+a = param2(1);
+r = param2(2);
+v = param2(3);
+
+<span class="comment">% Create the SABR curve based on these parameters.</span>
+<span class="keyword">for</span> j=1:length(MK2);
+	Vol2(j) = SABRvol(a, b, r, v, F, MK2(j), T);
+<span class="keyword">end</span>
+<span class="comment">% Plot the results of both SABR curves against the curve from the market.</span>
+
+X = sprintf(<span class="string">'Beta=%f, Alpha=%f, Rho=%f, Vol=%d'</span>,b,a,r,v);
+disp(X)
+P=sprintf(<span class="string">'Mean Squared Error=%f'</span>,immse(Vol2,oldMV));
+disp(P)
+
+figure
+plot(MK2, Vol2, <span class="string">'b-'</span>,  oldMK, oldMV, <span class="string">'kx-'</span>);
+
+legend(<span class="string">'SABR vol for 10 year maturity'</span>,<span class="string">'Original Vol for 10 year maturity'</span>)
+legend(<span class="string">'boxoff'</span>)
+title(<span class="string">'Part 2 - BETA=.7'</span>)
+
+fprintf(<span class="string">'\n'</span>)
+
+<span class="comment">%--------------beta=.4----------</span>
+b=.4;
+start = [.3 ,.3 ,.2];
+[param3, feval] = fminsearch(@(par)EstimateAllParameters(par, MK, MV, F, T, b), start, options);
+
+a = param3(1);
+r = param3(2);
+v = param3(3);
+
+<span class="comment">% Create the SABR curve based on these parameters.</span>
+<span class="keyword">for</span> j=1:length(MK2);
+	Vol3(j) = SABRvol(a, b, r, v, F, MK2(j), T);
+<span class="keyword">end</span>
+<span class="comment">% Plot the results of both SABR curves against the curve from the market.</span>
+
+X = sprintf(<span class="string">'Beta=%f, Alpha=%f, Rho=%f, Vol=%d'</span>,b,a,r,v);
+disp(X)
+P=sprintf(<span class="string">'Mean Squared Error=%f'</span>,immse(Vol3,oldMV));
+disp(P)
+figure
+plot(MK2, Vol3, <span class="string">'r-'</span>,  oldMK, oldMV, <span class="string">'kx-'</span>);
+legend(<span class="string">'SABR vol for 10 year maturity'</span>,<span class="string">'Original Vol for 10 year maturity'</span>)
+legend(<span class="string">'boxoff'</span>)
+title(<span class="string">'Part 2 - BETA=.4'</span>)
+
+
+
+
+fprintf(<span class="string">'\n\n\n%%--------------------------------Part3--------------------------------%%\n'</span>)
+X = sprintf(<span class="string">'Beta=.5, Alpha=%f, Rho=%f, Vol=%d'</span>,param1(1),param1(2),param1(3));
+disp(X)
+X = sprintf(<span class="string">'Beta=.7, Alpha=%f, Rho=%f, Vol=%d'</span>,param2(1),param2(2),param2(3));
+disp(X)
+X = sprintf(<span class="string">'Beta=.4, Alpha=%f, Rho=%f, Vol=%d'</span>,param3(1),param3(2),param3(3));
+disp(X)
+figure
+plot(MK2, Vol1, <span class="string">'g-'</span>,MK2, Vol2, <span class="string">'b-'</span>,MK2, Vol3, <span class="string">'r-'</span>,  oldMK, oldMV, <span class="string">'kx-'</span>);
+legend(<span class="string">'SABR vol with Beta=.5'</span>,<span class="string">'SABR vol with Beta=.7'</span>,<span class="string">'SABR vol with Beta=.4'</span>,<span class="string">'Original Vol for 10 year maturity'</span>)
+legend(<span class="string">'boxoff'</span>)
+title(<span class="string">'Part 3 - Combined Plot with BETA=.5, BETA=.7 and BETA=.4'</span>)
+
+fprintf(<span class="string">'\n\n\n%%--------------------------------Part4--------------------------------%%\n'</span>)
+
+fun=(EstimateAllParameters(param1, MK, MV, F, T, .5));
+fprintf(<span class="string">'For beta=.5, the minima of the optimized function=%d\n'</span>,fun)
+P=sprintf(<span class="string">'Mean Squared Error=%f\n'</span>,immse(Vol1,oldMV));
+disp(P)
+
+fun=(EstimateAllParameters(param2, MK, MV, F, T, .7));
+fprintf(<span class="string">'For beta=.7, the minima of the optimized function=%d\n'</span>,fun)
+P=sprintf(<span class="string">'Mean Squared Error=%f\n'</span>,immse(Vol2,oldMV));
+disp(P)
+
+fun=(EstimateAllParameters(param3, MK, MV, F, T, .4));
+fprintf(<span class="string">'For beta=.4, the minima of the optimized function=%d\n'</span>,fun)
+P=sprintf(<span class="string">'Mean Squared Error=%f\n'</span>,immse(Vol3,oldMV));
+disp(P)
+
+disp(<span class="string">'We can see that with beta of .7, we get the minimum of the function which we have minimized above'</span>)
+disp(<span class="string">'Also we can see that the mean squared with the original data is lowest for the model with beta=.7'</span>)
+fprintf(<span class="string">'\n\n\n%%--------------------------------Part5--------------------------------%%\n'</span>)
+
+
+b=.7;
+start = [.3 ,.3 ,.2];
+[param2, feval] = fminsearch(@(par)EstimateAllParameters(par, MK, MV, F, T, b), start, options);
+
+a = param2(1);
+r = param2(2);
+v = param2(3);
+
+oldMK    = xlsread(<span class="string">'swap_data.xlsx'</span>, <span class="string">'Sheet1'</span>, <span class="string">'C19:U19'</span>);
+oldMV    = xlsread(<span class="string">'swap_data.xlsx'</span>, <span class="string">'Sheet1'</span>, <span class="string">'C20:U20'</span>);
+<span class="comment">% Input the Maturity (T), ATM Strike (F), ATM Vol</span>
+T      = xlsread(<span class="string">'swap_data.xlsx'</span>, <span class="string">'Sheet1'</span>, <span class="string">'A20'</span>);
+F      = xlsread(<span class="string">'swap_data.xlsx'</span>, <span class="string">'Sheet1'</span>, <span class="string">'B23'</span>);
+oldMV = oldMV(k,:);
+T = T(k);
+Index = find(~isnan(oldMV));
+MV = oldMV(Index);
+MK = oldMK(Index);
+MK2 = oldMK;
+
+<span class="comment">% Create the SABR curve based on these parameters.</span>
+<span class="keyword">for</span> j=1:length(MK2);
+	Vol2(j) = SABRvol(a, b, r, v, F, MK2(j), T);
+<span class="keyword">end</span>
+<span class="comment">% Plot the results of both SABR curves against the curve from the market.</span>
+
+X = sprintf(<span class="string">'Beta=%f, Alpha=%f, Rho=%f, Vol=%f'</span>,b,a,r,v);
+disp(X)
+fun=(EstimateAllParameters(param2, MK, MV, F, T, .7));
+fprintf(<span class="string">'For beta=.7, the minima of the optimization function=%d\n'</span>,fun)
+P=sprintf(<span class="string">'Mean Squared Error=%f\n'</span>,immse(Vol2,oldMV));
+disp(P)
+
+figure
+plot(MK2, Vol2, <span class="string">'b-'</span>,  oldMK, oldMV, <span class="string">'kx-'</span>);
+
+legend(<span class="string">'SABR vol for 12 year maturity'</span>,<span class="string">'Original Vol for 12 year maturity'</span>)
+legend(<span class="string">'boxoff'</span>)
+title(<span class="string">'Part 5 - BETA=.7'</span>)
+
+disp(<span class="string">'From the minimized function value, the mean squared error and from the plot,'</span>)
+disp(<span class="string">'we can see that the SABR parameters obtained from 10year swap can manage to fit the 12 year swap to an extent'</span>)
+</pre><pre class="codeoutput">
+%--------------------------------Part1--------------------------------%
+Beta=0.500000, Alpha=14.838595, Rho=-0.930819, Vol=0.004204
+Mean Squared Error=90.367733
+
+
+
+%--------------------------------Part2--------------------------------%
+Beta=0.700000, Alpha=16.638037, Rho=-0.966216, Vol=8.783786e-15
+Mean Squared Error=77.500020
+
+Beta=0.400000, Alpha=14.621070, Rho=-0.783235, Vol=6.844429e-15
+Mean Squared Error=98.391854
+
+
+
+%--------------------------------Part3--------------------------------%
+Beta=.5, Alpha=14.838595, Rho=-0.930819, Vol=4.204022e-03
+Beta=.7, Alpha=16.638037, Rho=-0.966216, Vol=8.783786e-15
+Beta=.4, Alpha=14.621070, Rho=-0.783235, Vol=6.844429e-15
+
+
+
+%--------------------------------Part4--------------------------------%
+For beta=.5, the minima of the optimized function=1.716987e+03
+Mean Squared Error=90.367733
+
+For beta=.7, the minima of the optimized function=1.472500e+03
+Mean Squared Error=77.500020
+
+For beta=.4, the minima of the optimized function=1.869445e+03
+Mean Squared Error=98.391854
+
+We can see that with beta of .7, we get the minimum of the function which we have minimized above
+Also we can see that the mean squared with the original data is lowest for the model with beta=.7
+
+
+
+%--------------------------------Part5--------------------------------%
+Beta=0.700000, Alpha=16.638037, Rho=-0.966216, Vol=0.000000
+For beta=.7, the minima of the optimization function=5.388329e+03
+Mean Squared Error=283.596258
+
+From the minimized function value, the mean squared error and from the plot,
+we can see that the SABR parameters obtained from 10year swap can manage to fit the 12 year swap to an extent
+</pre><img vspace="5" hspace="5" src="./10 and 12 year_files/SABR_model_01.png" alt=""> <img vspace="5" hspace="5" src="./10 and 12 year_files/SABR_model_02.png" alt=""> <img vspace="5" hspace="5" src="./10 and 12 year_files/SABR_model_03.png" alt=""> <img vspace="5" hspace="5" src="./10 and 12 year_files/SABR_model_04.png" alt=""> <img vspace="5" hspace="5" src="./10 and 12 year_files/SABR_model_05.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB® R2015a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+
+clc; clear;
+
+
+fprintf('\n\n%%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHPart1REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH%%\n')
+
+k = 1;
+% Input the market strikes and vols, and the vendor SABR volatilities
+oldMK    = xlsread('swap_data.xlsx', 'Sheet1', 'C3:U3');
+oldMV    = xlsread('swap_data.xlsx', 'Sheet1', 'C4:U4');
+
+
+% Input the Maturity (T), ATM Strike (F), ATM Vol
+T      = xlsread('swap_data.xlsx', 'Sheet1', 'A4');
+F      = xlsread('swap_data.xlsx', 'Sheet1', 'B6');
+
+oldMV = oldMV(k,:);
+T = T(k);
+% Select only non-blank entries
+Index = find(~isnan(oldMV));
+MV = oldMV(Index);
+MK = oldMK(Index);
+
+% Create a grid of strikes for the SABR vols
+MK2 = oldMK; 
+
+%beta
+b = .5;
+
+% Define the starting values and options for fminsearch
+
+options = optimset('MaxFunEvals', 1e5, 'TolFun', 1e-8, 'TolX', 1e-10);
+start = [.3 ,.3 ,.2];
+[param1, feval] = fminsearch(@(par)EstimateAllParameters(par, MK, MV, F, T, b), start, options);
+
+a = param1(1);
+r = param1(2);
+v = param1(3);
+
+% Create the SABR curve based on these parameters.
+for j=1:length(MK2);
+	Vol1(j) = SABRvol(a, b, r, v, F, MK2(j), T);
+end
+% Plot the results of both SABR curves against the curve from the market.
+
+% 'alpha parameter     ::',a
+% 'beta parameter      ::',b
+% 'rho parameter       ::',r
+% 'vol of vol parameter::',v
+
+X = sprintf('Beta=%f, Alpha=%f, Rho=%f, Vol=%f',b,a,r,v);
+disp(X)
+P=sprintf('Mean Squared Error=%f',immse(Vol1,oldMV));
+disp(P)
+
+figure
+plot(MK2, Vol1, 'g-',  oldMK, oldMV, 'kx-');
+legend('SABR vol for 10 year maturity','Original Vol for 10 year maturity')
+legend('boxoff')
+title('Part 1 - BETA=.5')
+
+fprintf('\n\n\n%%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHPart2REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH%%\n')
+
+%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHbeta=.7REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+b=.7;
+start = [.3 ,.3 ,.2];
+[param2, feval] = fminsearch(@(par)EstimateAllParameters(par, MK, MV, F, T, b), start, options);
+
+a = param2(1);
+r = param2(2);
+v = param2(3);
+
+% Create the SABR curve based on these parameters.
+for j=1:length(MK2);
+	Vol2(j) = SABRvol(a, b, r, v, F, MK2(j), T);
+end
+% Plot the results of both SABR curves against the curve from the market.
+
+X = sprintf('Beta=%f, Alpha=%f, Rho=%f, Vol=%d',b,a,r,v);
+disp(X)
+P=sprintf('Mean Squared Error=%f',immse(Vol2,oldMV));
+disp(P)
+
+figure
+plot(MK2, Vol2, 'b-',  oldMK, oldMV, 'kx-');
+
+legend('SABR vol for 10 year maturity','Original Vol for 10 year maturity')
+legend('boxoff')
+title('Part 2 - BETA=.7')
+
+fprintf('\n')
+
+%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHbeta=.4REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+b=.4;
+start = [.3 ,.3 ,.2];
+[param3, feval] = fminsearch(@(par)EstimateAllParameters(par, MK, MV, F, T, b), start, options);
+
+a = param3(1);
+r = param3(2);
+v = param3(3);
+
+% Create the SABR curve based on these parameters.
+for j=1:length(MK2);
+	Vol3(j) = SABRvol(a, b, r, v, F, MK2(j), T);
+end
+% Plot the results of both SABR curves against the curve from the market.
+
+X = sprintf('Beta=%f, Alpha=%f, Rho=%f, Vol=%d',b,a,r,v);
+disp(X)
+P=sprintf('Mean Squared Error=%f',immse(Vol3,oldMV));
+disp(P)
+figure
+plot(MK2, Vol3, 'r-',  oldMK, oldMV, 'kx-');
+legend('SABR vol for 10 year maturity','Original Vol for 10 year maturity')
+legend('boxoff')
+title('Part 2 - BETA=.4')
+
+
+
+
+fprintf('\n\n\n%%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHPart3REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH%%\n')
+X = sprintf('Beta=.5, Alpha=%f, Rho=%f, Vol=%d',param1(1),param1(2),param1(3));
+disp(X)
+X = sprintf('Beta=.7, Alpha=%f, Rho=%f, Vol=%d',param2(1),param2(2),param2(3));
+disp(X)
+X = sprintf('Beta=.4, Alpha=%f, Rho=%f, Vol=%d',param3(1),param3(2),param3(3));
+disp(X)
+figure
+plot(MK2, Vol1, 'g-',MK2, Vol2, 'b-',MK2, Vol3, 'r-',  oldMK, oldMV, 'kx-');
+legend('SABR vol with Beta=.5','SABR vol with Beta=.7','SABR vol with Beta=.4','Original Vol for 10 year maturity')
+legend('boxoff')
+title('Part 3 - Combined Plot with BETA=.5, BETA=.7 and BETA=.4')
+
+fprintf('\n\n\n%%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHPart4REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH%%\n')
+
+fun=(EstimateAllParameters(param1, MK, MV, F, T, .5));
+fprintf('For beta=.5, the minima of the optimized function=%d\n',fun)
+P=sprintf('Mean Squared Error=%f\n',immse(Vol1,oldMV));
+disp(P)
+
+fun=(EstimateAllParameters(param2, MK, MV, F, T, .7));
+fprintf('For beta=.7, the minima of the optimized function=%d\n',fun)
+P=sprintf('Mean Squared Error=%f\n',immse(Vol2,oldMV));
+disp(P)
+
+fun=(EstimateAllParameters(param3, MK, MV, F, T, .4));
+fprintf('For beta=.4, the minima of the optimized function=%d\n',fun)
+P=sprintf('Mean Squared Error=%f\n',immse(Vol3,oldMV));
+disp(P)
+
+disp('We can see that with beta of .7, we get the minimum of the function which we have minimized above')
+disp('Also we can see that the mean squared with the original data is lowest for the model with beta=.7')
+fprintf('\n\n\n%%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHPart5REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH%%\n')
+
+
+b=.7;
+start = [.3 ,.3 ,.2];
+[param2, feval] = fminsearch(@(par)EstimateAllParameters(par, MK, MV, F, T, b), start, options);
+
+a = param2(1);
+r = param2(2);
+v = param2(3);
+
+oldMK    = xlsread('swap_data.xlsx', 'Sheet1', 'C19:U19');
+oldMV    = xlsread('swap_data.xlsx', 'Sheet1', 'C20:U20');
+% Input the Maturity (T), ATM Strike (F), ATM Vol
+T      = xlsread('swap_data.xlsx', 'Sheet1', 'A20');
+F      = xlsread('swap_data.xlsx', 'Sheet1', 'B23');
+oldMV = oldMV(k,:);
+T = T(k);
+Index = find(~isnan(oldMV));
+MV = oldMV(Index);
+MK = oldMK(Index);
+MK2 = oldMK; 
+
+% Create the SABR curve based on these parameters.
+for j=1:length(MK2);
+	Vol2(j) = SABRvol(a, b, r, v, F, MK2(j), T);
+end
+% Plot the results of both SABR curves against the curve from the market.
+
+X = sprintf('Beta=%f, Alpha=%f, Rho=%f, Vol=%f',b,a,r,v);
+disp(X)
+fun=(EstimateAllParameters(param2, MK, MV, F, T, .7));
+fprintf('For beta=.7, the minima of the optimization function=%d\n',fun)
+P=sprintf('Mean Squared Error=%f\n',immse(Vol2,oldMV));
+disp(P)
+
+figure
+plot(MK2, Vol2, 'b-',  oldMK, oldMV, 'kx-');
+
+legend('SABR vol for 12 year maturity','Original Vol for 12 year maturity')
+legend('boxoff')
+title('Part 5 - BETA=.7')
+
+disp('From the minimized function value, the mean squared error and from the plot,')
+disp('we can see that the SABR parameters obtained from 10year swap can manage to fit the 12 year swap to an extent')
+
+
+
+##### SOURCE END #####
+--></body></html>
