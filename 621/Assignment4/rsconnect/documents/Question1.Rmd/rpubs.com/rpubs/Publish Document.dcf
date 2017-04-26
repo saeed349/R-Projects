@@ -1,0 +1,8 @@
+name: Publish Document
+title:
+account: rpubs
+server: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/270298/dbc3ba25e88d40c0899012a94729894c
+bundleId: https://api.rpubs.com/api/v1/document/270298/dbc3ba25e88d40c0899012a94729894c
+url: http://rpubs.com/saeed349/270298
+when: 1493003540.06966

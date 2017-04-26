@@ -119,6 +119,8 @@ title('Part 2 - BETA=.4')
 
 
 fprintf('\n\n\n%%--------------------------------Part3--------------------------------%%\n')
+
+
 X = sprintf('Beta=.5, Alpha=%f, Rho=%f, Vol=%d',param1(1),param1(2),param1(3));
 disp(X)
 X = sprintf('Beta=.7, Alpha=%f, Rho=%f, Vol=%d',param2(1),param2(2),param2(3));
@@ -130,6 +132,11 @@ plot(MK2, Vol1, 'g-',MK2, Vol2, 'b-',MK2, Vol3, 'r-',  oldMK, oldMV, 'kx-');
 legend('SABR vol with Beta=.5','SABR vol with Beta=.7','SABR vol with Beta=.4','Original Vol for 10 year maturity')
 legend('boxoff')
 title('Part 3 - Combined Plot with BETA=.5, BETA=.7 and BETA=.4')
+
+fprintf('\n')
+disp('Thus we can see that the vol is lowest for Beta=.5 and we get the highest alpha=16.38 for beta=.7')
+disp('This shows that  the optimum value lies in between beta=.5 and beta=.7')
+disp('In our analysis we thus have further evidence as the best fit model has beta close to .7')
 
 fprintf('\n\n\n%%--------------------------------Part4--------------------------------%%\n')
 
@@ -148,8 +155,11 @@ fprintf('For beta=.4, the minima of the optimized function=%d\n',fun)
 P=sprintf('Mean Squared Error=%f\n',immse(Vol3,oldMV));
 disp(P)
 
+fprintf('\n')
 disp('We can see that with beta of .7, we get the minimum of the function which we have minimized above')
 disp('Also we can see that the mean squared with the original data is lowest for the model with beta=.7')
+
+
 fprintf('\n\n\n%%--------------------------------Part5--------------------------------%%\n')
 
 

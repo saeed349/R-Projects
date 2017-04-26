@@ -1,0 +1,190 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Question3-BlackScholes_Call_Price_Using_FFT</title><meta name="generator" content="MATLAB 8.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2017-04-23"><meta name="DC.source" content="Question3-BlackScholes_Call_Price_Using_FFT.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="comment">% Fast Fourier Transform for the Black Scholes Model</span>
+
+<span class="comment">% --------------------------------------</span>
+<span class="comment">% Inputs</span>
+<span class="comment">%   N  = number of discretization points</span>
+<span class="comment">%   uplimit = Upper limit of integration</span>
+<span class="comment">%   S0 = spot price</span>
+<span class="comment">%   r = risk free rate</span>
+<span class="comment">%   tau = maturity</span>
+<span class="comment">%   sigma = volatility</span>
+<span class="comment">%   alpha = dampening factor</span>
+<span class="comment">%   fast = fast versus slow algorithm.</span>
+<span class="comment">%     fast = 1 fast version.  Uses vectorization.</span>
+<span class="comment">%     fast = 0 slow version.  Uses loops</span>
+<span class="comment">% --------------------------------------</span>
+<span class="comment">% Outputs</span>
+<span class="comment">%   CallFFT = Black Scholes call prices using FFT</span>
+<span class="comment">%   CallBS  = Black Scholes call prices using closed form</span>
+<span class="comment">%         K = Strike prices</span>
+<span class="comment">%       eta = increment for integration range</span>
+<span class="comment">%    lambda = increment for log-strike range</span>
+<span class="comment">% --------------------------------------</span>
+<span class="comment">% Implemented by Saeed Rahman</span>
+
+clc; clear;
+
+<span class="comment">% Required inputs</span>
+S0 = 100;           <span class="comment">% Spot price.</span>
+r = 0.05;           <span class="comment">% Risk free rate.</span>
+q = 0.01;           <span class="comment">% Dividend yield</span>
+tau = .75;          <span class="comment">% Time to maturity.</span>
+sigma = 0.25;       <span class="comment">% Volatility</span>
+alpha = 1.75;      <span class="comment">% Dampening factor</span>
+N = 128;            <span class="comment">% Grid size</span>
+uplimit = 200;      <span class="comment">% Upper limit of integration</span>
+fast = 0;           <span class="comment">% Choice of fast or slow algorithm</span>
+
+<span class="comment">% Run the Fast Fourier Transform</span>
+[CallFFT CallBS K lambda eta] = BlackScholesFFT(N,uplimit,S0,r,q,tau,sigma,alpha,fast);
+
+<span class="comment">% Print the results near the ATM strikes</span>
+disp(<span class="string">'  Strikes    FFT Price  Analytical Price'</span>)
+u1 = find(round(K*1000)/1000==S0);
+du = 15;
+[K(u1-du:u1+du) CallFFT(u1-du:u1+du), CallBS(u1-du:u1+du)]
+
+<span class="comment">% Print the increments for integration and for log strikes</span>
+IntegrationIncrement = eta
+LogStrikeIncrement = lambda
+NumberOfPoints = N
+
+
+plot(K(u1-du:u1+du), CallFFT(u1-du:u1+du),<span class="string">'b*-'</span>,K(u1-du:u1+du), CallBS(u1-du:u1+du),<span class="string">'r+-'</span>)
+legend(<span class="string">'Call Price: FFT '</span>,<span class="string">'Call Price:Black Sholes Analytical'</span>)
+legend(<span class="string">'boxoff'</span>)
+xlabel(<span class="string">'Strike'</span>) <span class="comment">% x-axis label</span>
+ylabel(<span class="string">'Price'</span>) <span class="comment">% y-axis label</span>
+title(<span class="string">'Call Price: FFT vs Analytical'</span>)
+</pre><pre class="codeoutput error">Error using evalin
+Undefined function or variable 'Question3'.
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+% Fast Fourier Transform for the Black Scholes Model
+
+% REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+% Inputs
+%   N  = number of discretization points
+%   uplimit = Upper limit of integration
+%   S0 = spot price
+%   r = risk free rate
+%   tau = maturity
+%   sigma = volatility
+%   alpha = dampening factor
+%   fast = fast versus slow algorithm.
+%     fast = 1 fast version.  Uses vectorization.
+%     fast = 0 slow version.  Uses loops
+% REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+% Outputs
+%   CallFFT = Black Scholes call prices using FFT
+%   CallBS  = Black Scholes call prices using closed form
+%         K = Strike prices
+%       eta = increment for integration range
+%    lambda = increment for log-strike range
+% REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+% Implemented by Saeed Rahman
+ 
+clc; clear;
+
+% Required inputs
+S0 = 100;           % Spot price.
+r = 0.05;           % Risk free rate.
+q = 0.01;           % Dividend yield
+tau = .75;          % Time to maturity.
+sigma = 0.25;       % Volatility
+alpha = 1.75;      % Dampening factor
+N = 128;            % Grid size
+uplimit = 200;      % Upper limit of integration
+fast = 0;           % Choice of fast or slow algorithm
+
+% Run the Fast Fourier Transform
+[CallFFT CallBS K lambda eta] = BlackScholesFFT(N,uplimit,S0,r,q,tau,sigma,alpha,fast);
+
+% Print the results near the ATM strikes
+disp('  Strikes    FFT Price  Analytical Price')
+u1 = find(round(K*1000)/1000==S0);
+du = 15;
+[K(u1-du:u1+du) CallFFT(u1-du:u1+du), CallBS(u1-du:u1+du)]
+
+% Print the increments for integration and for log strikes
+IntegrationIncrement = eta
+LogStrikeIncrement = lambda
+NumberOfPoints = N
+
+
+plot(K(u1-du:u1+du), CallFFT(u1-du:u1+du),'b*-',K(u1-du:u1+du), CallBS(u1-du:u1+du),'r+-')
+legend('Call Price: FFT ','Call Price:Black Sholes Analytical')
+legend('boxoff')
+xlabel('Strike') % x-axis label
+ylabel('Price') % y-axis label
+title('Call Price: FFT vs Analytical')
+##### SOURCE END #####
+--></body></html>

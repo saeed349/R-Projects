@@ -186,6 +186,8 @@ title(<span class="string">'Part 2 - BETA=.4'</span>)
 
 
 fprintf(<span class="string">'\n\n\n%%--------------------------------Part3--------------------------------%%\n'</span>)
+
+
 X = sprintf(<span class="string">'Beta=.5, Alpha=%f, Rho=%f, Vol=%d'</span>,param1(1),param1(2),param1(3));
 disp(X)
 X = sprintf(<span class="string">'Beta=.7, Alpha=%f, Rho=%f, Vol=%d'</span>,param2(1),param2(2),param2(3));
@@ -197,6 +199,11 @@ plot(MK2, Vol1, <span class="string">'g-'</span>,MK2, Vol2, <span class="string"
 legend(<span class="string">'SABR vol with Beta=.5'</span>,<span class="string">'SABR vol with Beta=.7'</span>,<span class="string">'SABR vol with Beta=.4'</span>,<span class="string">'Original Vol for 10 year maturity'</span>)
 legend(<span class="string">'boxoff'</span>)
 title(<span class="string">'Part 3 - Combined Plot with BETA=.5, BETA=.7 and BETA=.4'</span>)
+
+fprintf(<span class="string">'\n'</span>)
+disp(<span class="string">'Thus we can see that the vol is lowest for Beta=.5 and we get the highest alpha=16.38 for beta=.7'</span>)
+disp(<span class="string">'This shows that  the optimum value lies in between beta=.5 and beta=.7'</span>)
+disp(<span class="string">'In our analysis we thus have further evidence as the best fit model has beta close to .7'</span>)
 
 fprintf(<span class="string">'\n\n\n%%--------------------------------Part4--------------------------------%%\n'</span>)
 
@@ -215,8 +222,11 @@ fprintf(<span class="string">'For beta=.4, the minima of the optimized function=
 P=sprintf(<span class="string">'Mean Squared Error=%f\n'</span>,immse(Vol3,oldMV));
 disp(P)
 
+fprintf(<span class="string">'\n'</span>)
 disp(<span class="string">'We can see that with beta of .7, we get the minimum of the function which we have minimized above'</span>)
 disp(<span class="string">'Also we can see that the mean squared with the original data is lowest for the model with beta=.7'</span>)
+
+
 fprintf(<span class="string">'\n\n\n%%--------------------------------Part5--------------------------------%%\n'</span>)
 
 
@@ -284,6 +294,10 @@ Beta=.5, Alpha=14.838595, Rho=-0.930819, Vol=4.204022e-03
 Beta=.7, Alpha=16.638037, Rho=-0.966216, Vol=8.783786e-15
 Beta=.4, Alpha=14.621070, Rho=-0.783235, Vol=6.844429e-15
 
+Thus we can see that the vol is lowest for Beta=.5 and we get the highest alpha=16.38 for beta=.7
+This shows that  the optimum value lies in between beta=.5 and beta=.7
+In our analysis we thus have further evidence as the best fit model has beta close to .7
+
 
 
 %--------------------------------Part4--------------------------------%
@@ -295,6 +309,7 @@ Mean Squared Error=77.500020
 
 For beta=.4, the minima of the optimized function=1.869445e+03
 Mean Squared Error=98.391854
+
 
 We can see that with beta of .7, we get the minimum of the function which we have minimized above
 Also we can see that the mean squared with the original data is lowest for the model with beta=.7
@@ -431,6 +446,8 @@ title('Part 2 - BETA=.4')
 
 
 fprintf('\n\n\n%%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHPart3REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH%%\n')
+
+
 X = sprintf('Beta=.5, Alpha=%f, Rho=%f, Vol=%d',param1(1),param1(2),param1(3));
 disp(X)
 X = sprintf('Beta=.7, Alpha=%f, Rho=%f, Vol=%d',param2(1),param2(2),param2(3));
@@ -442,6 +459,11 @@ plot(MK2, Vol1, 'g-',MK2, Vol2, 'b-',MK2, Vol3, 'r-',  oldMK, oldMV, 'kx-');
 legend('SABR vol with Beta=.5','SABR vol with Beta=.7','SABR vol with Beta=.4','Original Vol for 10 year maturity')
 legend('boxoff')
 title('Part 3 - Combined Plot with BETA=.5, BETA=.7 and BETA=.4')
+
+fprintf('\n')
+disp('Thus we can see that the vol is lowest for Beta=.5 and we get the highest alpha=16.38 for beta=.7')
+disp('This shows that  the optimum value lies in between beta=.5 and beta=.7')
+disp('In our analysis we thus have further evidence as the best fit model has beta close to .7')
 
 fprintf('\n\n\n%%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHPart4REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH%%\n')
 
@@ -460,8 +482,11 @@ fprintf('For beta=.4, the minima of the optimized function=%d\n',fun)
 P=sprintf('Mean Squared Error=%f\n',immse(Vol3,oldMV));
 disp(P)
 
+fprintf('\n')
 disp('We can see that with beta of .7, we get the minimum of the function which we have minimized above')
 disp('Also we can see that the mean squared with the original data is lowest for the model with beta=.7')
+
+
 fprintf('\n\n\n%%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHPart5REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH%%\n')
 
 

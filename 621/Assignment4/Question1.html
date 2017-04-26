@@ -150,6 +150,8 @@ stock5=ts(df[5])</code></pre>
 </div>
 <pre class="r"><code>library(Sim.DiffProc)
 library(Ecdat)</code></pre>
+<div id="defining-the-sdes" class="section level3">
+<h3>Defining the SDE’s</h3>
 <pre class="r"><code>fx &lt;-{}
 gx &lt;-{}
 #model 1 drift and diffusion 
@@ -171,6 +173,9 @@ gx[4] &lt;- expression( theta[2]*x^theta[3] )
 #model 5 drift and diffusion 
 fx[5] &lt;- expression( theta[1]*x )
 gx[5] &lt;- expression(theta[2] + (theta[3]*x^theta[4]) )</code></pre>
+</div>
+<div id="finding-the-best-model" class="section level3">
+<h3>Finding the best model</h3>
 <pre class="r"><code>pmle=eval(formals(fitsde.default)$pmle)
 print(&quot;We'll use euler method for our Maximum Likelyhood&quot;)</code></pre>
 <pre><code>## [1] &quot;We'll use euler method for our Maximum Likelyhood&quot;</code></pre>
@@ -200,6 +205,9 @@ print(&quot;We'll use euler method for our Maximum Likelyhood&quot;)</code></pre
   Bestmod &lt;- which.min(Test[,1])
   list('best.model'=Bestmod,'AIC.results'=Test)
 }</code></pre>
+</div>
+<div id="function-to-estimate-parameter" class="section level3">
+<h3>Function to estimate parameter</h3>
 <pre class="r"><code>Diff.mle &lt;-function(fx,gx,data)
 {
   pmle &lt;- eval(formals(fitsde.default)$pmle)
@@ -212,11 +220,17 @@ print(&quot;We'll use euler method for our Maximum Likelyhood&quot;)</code></pre
   names(Info) &lt;- c(&quot;AIC&quot;)
   list(&quot;Info&quot;=Info,&quot;Coef&quot;=Coef)
 }</code></pre>
+</div>
 <div id="for-stock-1" class="section level3">
 <h3>For Stock 1</h3>
+<div id="part-1" class="section level4">
+<h4>Part 1)</h4>
 <pre class="r"><code>fit1=Best.fit(data =stock1,pmle = pmle[1])
 print(paste(&quot;Best model = model &quot;,fit1$best.model))</code></pre>
 <pre><code>## [1] &quot;Best model = model  2&quot;</code></pre>
+</div>
+<div id="part-2" class="section level4">
+<h4>Part 2)</h4>
 <pre class="r"><code>print(&quot;The parameter estimates are:&quot;)</code></pre>
 <pre><code>## [1] &quot;The parameter estimates are:&quot;</code></pre>
 <pre class="r"><code>ls1=Diff.mle(fx=fx[fit1$best.model],gx=gx[fit1$best.model],data = stock1)
@@ -227,11 +241,28 @@ print(ls1$Coef)</code></pre>
 ## theta3 7.536530e-03 0.8824043  0.0040184172  9.165665e-03
 ## theta4 3.903047e-01 0.4091350  0.5276808366  3.500519e-01</code></pre>
 </div>
+<div id="part-3" class="section level4">
+<h4>Part 3)</h4>
+<pre class="r"><code>print(ls1$Info)</code></pre>
+<pre><code>##               AIC
+## euler   -252820.0
+## kessler       8.0
+## ozaki   -231969.0
+## shoji   -251262.5</code></pre>
+<pre class="r"><code>print(paste(rownames(ls1$Info)[which.min(ls1$Info[,1])],&quot; method gives the best estimate&quot;))</code></pre>
+<pre><code>## [1] &quot;euler  method gives the best estimate&quot;</code></pre>
+</div>
+</div>
 <div id="for-stock-2" class="section level3">
 <h3>For Stock 2</h3>
+<div id="part-1-1" class="section level4">
+<h4>Part 1)</h4>
 <pre class="r"><code>fit2=Best.fit(data =stock2,pmle = pmle[1])
 print(paste(&quot;Best model = model &quot;,fit2$best.model))</code></pre>
 <pre><code>## [1] &quot;Best model = model  4&quot;</code></pre>
+</div>
+<div id="part-2-1" class="section level4">
+<h4>Part 2)</h4>
 <pre class="r"><code>print(&quot;The parameter estimates are:&quot;)</code></pre>
 <pre><code>## [1] &quot;The parameter estimates are:&quot;</code></pre>
 <pre class="r"><code>ls2=Diff.mle(fx=fx[fit2$best.model],gx=gx[fit2$best.model],data = stock2)
@@ -242,11 +273,28 @@ print(ls2$Coef)</code></pre>
 ## theta3 0.537076888 0.513984058     1     1
 ## theta4 1.000000000 1.000000000     1     1</code></pre>
 </div>
+<div id="part-3-1" class="section level4">
+<h4>Part 3)</h4>
+<pre class="r"><code>print(ls2$Info)</code></pre>
+<pre><code>##               AIC
+## euler   -125662.2
+## kessler -125065.5
+## ozaki         8.0
+## shoji         8.0</code></pre>
+<pre class="r"><code>print(paste(rownames(ls2$Info)[which.min(ls2$Info[,1])],&quot; method gives the best estimate&quot;))</code></pre>
+<pre><code>## [1] &quot;euler  method gives the best estimate&quot;</code></pre>
+</div>
+</div>
 <div id="for-stock-3" class="section level3">
 <h3>For Stock 3</h3>
+<div id="part-1-2" class="section level4">
+<h4>Part 1)</h4>
 <pre class="r"><code>fit3=Best.fit(data =stock3,pmle = pmle[1])
 print(paste(&quot;Best model = model &quot;,fit3$best.model))</code></pre>
 <pre><code>## [1] &quot;Best model = model  1&quot;</code></pre>
+</div>
+<div id="part-2-2" class="section level4">
+<h4>Part 2)</h4>
 <pre class="r"><code>print(&quot;The parameter estimates are:&quot;)</code></pre>
 <pre><code>## [1] &quot;The parameter estimates are:&quot;</code></pre>
 <pre class="r"><code>ls3=Diff.mle(fx=fx[fit3$best.model],gx=gx[fit3$best.model],data = stock3)
@@ -257,11 +305,28 @@ print(ls3$Coef)</code></pre>
 ## theta3  3.734064202 0.6267437  8.356426e-01 7.071774e-01
 ## theta4  1.000000000 1.0000000  1.000000e+00 1.000000e+00</code></pre>
 </div>
+<div id="part-3-2" class="section level4">
+<h4>Part 3)</h4>
+<pre class="r"><code>print(ls3$Info)</code></pre>
+<pre><code>##              AIC
+## euler       8.00
+## kessler     8.00
+## ozaki   39763.07
+## shoji   44836.87</code></pre>
+<pre class="r"><code>print(paste(rownames(ls3$Info)[which.min(ls3$Info[,1])],&quot; method gives the best estimate&quot;))</code></pre>
+<pre><code>## [1] &quot;euler  method gives the best estimate&quot;</code></pre>
+</div>
+</div>
 <div id="for-stock-4" class="section level3">
 <h3>For Stock 4</h3>
+<div id="part-1-3" class="section level4">
+<h4>Part 1)</h4>
 <pre class="r"><code>fit4=Best.fit(data =stock4,pmle = pmle[1])
 print(paste(&quot;Best model = model &quot;,fit4$best.model))</code></pre>
 <pre><code>## [1] &quot;Best model = model  2&quot;</code></pre>
+</div>
+<div id="part-2-3" class="section level4">
+<h4>Part 2)</h4>
 <pre class="r"><code>print(&quot;The parameter estimates are:&quot;)</code></pre>
 <pre><code>## [1] &quot;The parameter estimates are:&quot;</code></pre>
 <pre class="r"><code>ls4=Diff.mle(fx=fx[fit4$best.model],gx=gx[fit4$best.model],data = stock4)
@@ -272,11 +337,29 @@ print(ls4$Coef)</code></pre>
 ## theta3  1.471477e-02 0.6495840  2.751369e-02 1.455193e-02
 ## theta4  4.269734e-01 0.1907163  3.015314e-01 4.293345e-01</code></pre>
 </div>
+<div id="part-3-3" class="section level4">
+<h4>Part 3)</h4>
+<pre class="r"><code>print(ls4$Info)</code></pre>
+<pre><code>##               AIC
+## euler   -128994.3
+## kessler       8.0
+## ozaki   -127672.7
+## shoji   -129012.0</code></pre>
+<pre class="r"><code>print(paste(rownames(ls4$Info)[which.min(ls4$Info[,1])],&quot; method gives the best estimate&quot;))</code></pre>
+<pre><code>## [1] &quot;shoji  method gives the best estimate&quot;</code></pre>
+</div>
+</div>
 <div id="for-stock-5" class="section level3">
 <h3>For Stock 5</h3>
+<div id="part-1-4" class="section level4">
+<h4>Part 1)</h4>
 <pre class="r"><code>fit5=Best.fit(data =stock5,pmle = pmle[1])
+
 print(paste(&quot;Best model = model &quot;,fit5$best.model))</code></pre>
 <pre><code>## [1] &quot;Best model = model  4&quot;</code></pre>
+</div>
+<div id="part-2-4" class="section level4">
+<h4>Part 2)</h4>
 <pre class="r"><code>print(&quot;The parameter estimates are:&quot;)</code></pre>
 <pre><code>## [1] &quot;The parameter estimates are:&quot;</code></pre>
 <pre class="r"><code>ls5=Diff.mle(fx=fx[fit5$best.model],gx=gx[fit5$best.model],data = stock5)
@@ -286,6 +369,18 @@ print(ls5$Coef)</code></pre>
 ## theta2 0.009936535 0.01075011     1     1
 ## theta3 0.530964394 0.51575952     1     1
 ## theta4 1.000000000 1.00000000     1     1</code></pre>
+</div>
+<div id="part-3-4" class="section level4">
+<h4>Part 3)</h4>
+<pre class="r"><code>print(ls5$Info)</code></pre>
+<pre><code>##               AIC
+## euler   -51791.13
+## kessler -51313.00
+## ozaki        8.00
+## shoji        8.00</code></pre>
+<pre class="r"><code>print(paste(rownames(ls5$Info)[which.min(ls5$Info[,1])],&quot; method gives the best estimate&quot;))</code></pre>
+<pre><code>## [1] &quot;euler  method gives the best estimate&quot;</code></pre>
+</div>
 </div>
 </div>
 

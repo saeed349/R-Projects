@@ -72,7 +72,15 @@ Diff.mle <-function(fx,gx,data)
 }
 
 
-fx <- expression( theta[1]*x)
-gx <- expression( theta[2]*x^theta[3] )
+# fx <- expression( theta[1]*x)
+# gx <- expression( theta[2]*x^theta[3] )
 
-ls=Diff.mle(fx=fx,gx=gx,data = X)
+fx2 <- expression( theta[1]+theta[2]*x )
+gx2 <- expression( theta[3]*x^theta[4] )
+
+ls=Diff.mle(fx=fx2,gx=gx2,data = X)
+
+ls$Info
+
+rownames(ls$Info)[which.min(ls$Info[,1])]
+

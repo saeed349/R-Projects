@@ -37,7 +37,7 @@ library(Sim.DiffProc)
 library(Ecdat)
 
 ```
-
+### Defining the SDE's
 ```{r}
 
 fx <-{}
@@ -64,7 +64,7 @@ gx[5] <- expression(theta[2] + (theta[3]*x^theta[4]) )
 
 ```
 
-
+### Finding the best model
 ```{r, warning=FALSE}
 
 pmle=eval(formals(fitsde.default)$pmle)
@@ -99,6 +99,7 @@ Best.fit<-function(data,pmle)
 
 
 ```
+### Function to estimate parameter
 ```{r}
 Diff.mle <-function(fx,gx,data)
 {
@@ -114,60 +115,108 @@ Diff.mle <-function(fx,gx,data)
 }
 ```
 ### For Stock 1
-
+#### Part 1)
 ```{r, warning=FALSE}
+
 fit1=Best.fit(data =stock1,pmle = pmle[1])
 print(paste("Best model = model ",fit1$best.model))
 
-
+```
+#### Part 2)
+```{r, warning=FALSE}
 print("The parameter estimates are:")
 ls1=Diff.mle(fx=fx[fit1$best.model],gx=gx[fit1$best.model],data = stock1)
 print(ls1$Coef)
+
+```
+#### Part 3)
+```{r, warning=FALSE}
+print(ls1$Info)
+print(paste(rownames(ls1$Info)[which.min(ls1$Info[,1])]," method gives the best estimate"))
 ```
 
-
 ### For Stock 2
-
+#### Part 1)
 ```{r, warning=FALSE}
+
 fit2=Best.fit(data =stock2,pmle = pmle[1])
 print(paste("Best model = model ",fit2$best.model))
 
+```
+#### Part 2)
+```{r, warning=FALSE}
 
 print("The parameter estimates are:")
 ls2=Diff.mle(fx=fx[fit2$best.model],gx=gx[fit2$best.model],data = stock2)
 print(ls2$Coef)
-```
-### For Stock 3
 
+```
+#### Part 3)
 ```{r, warning=FALSE}
+print(ls2$Info)
+print(paste(rownames(ls2$Info)[which.min(ls2$Info[,1])]," method gives the best estimate"))
+```
+
+### For Stock 3
+#### Part 1)
+```{r, warning=FALSE}
+
 fit3=Best.fit(data =stock3,pmle = pmle[1])
 print(paste("Best model = model ",fit3$best.model))
 
+```
+#### Part 2)
+```{r, warning=FALSE}
 
 print("The parameter estimates are:")
 ls3=Diff.mle(fx=fx[fit3$best.model],gx=gx[fit3$best.model],data = stock3)
 print(ls3$Coef)
+
+```
+#### Part 3)
+```{r, warning=FALSE}
+print(ls3$Info)
+print(paste(rownames(ls3$Info)[which.min(ls3$Info[,1])]," method gives the best estimate"))
 ```
 ### For Stock 4
-
+#### Part 1)
 ```{r, warning=FALSE}
+
 fit4=Best.fit(data =stock4,pmle = pmle[1])
 print(paste("Best model = model ",fit4$best.model))
 
+```
+#### Part 2)
+```{r, warning=FALSE}
 
 print("The parameter estimates are:")
 ls4=Diff.mle(fx=fx[fit4$best.model],gx=gx[fit4$best.model],data = stock4)
 print(ls4$Coef)
+
+```
+#### Part 3)
+```{r, warning=FALSE}
+print(ls4$Info)
+print(paste(rownames(ls4$Info)[which.min(ls4$Info[,1])]," method gives the best estimate"))
 ```
 
 ### For Stock 5
-
+#### Part 1)
 ```{r, warning=FALSE}
 fit5=Best.fit(data =stock5,pmle = pmle[1])
+
 print(paste("Best model = model ",fit5$best.model))
 
-
+```
+#### Part 2)
+```{r, warning=FALSE}
 print("The parameter estimates are:")
 ls5=Diff.mle(fx=fx[fit5$best.model],gx=gx[fit5$best.model],data = stock5)
 print(ls5$Coef)
+
+```
+#### Part 3)
+```{r, warning=FALSE}
+print(ls5$Info)
+print(paste(rownames(ls5$Info)[which.min(ls5$Info[,1])]," method gives the best estimate"))
 ```
