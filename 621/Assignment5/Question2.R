@@ -24,13 +24,14 @@ for(i in 1:10000)
 
 #Monte Carlo Method----
 
-set.seed(07630)
-nIterations =  100000  #should be high 
+# set.seed(07630)
+nIterations =  100000  #should be high #100000 in question
 nSteps = 1000
-mu = 0.02
-dt = 1/nSteps
-sigma = 0.03
-S0 = 100
+
+# mu = 0.02
+# # dt = 1/nSteps
+# sigma = 0.03
+# S0 = 100
 
 
 S_0=100.0
@@ -38,6 +39,8 @@ K = 100.0
 r = 0.0319
 v_0 = 0.010201
 T = 1.00
+
+dt = T/nSteps
 
 rho = -0.7
 kappa = 6.21
@@ -58,20 +61,20 @@ for( j in 1:nIterations) {
     X2 = rnorm(1,0,1) 
     W1=X1
     W2= rho*X1+sqrt(1-rho^2)*X2
-    
+
     vmax= max(vol_path,0)
     # print(paste("vol_path Before=",vol_path))
-    vol_path=vol_path+kappa*T*(theta-vmax)+xi*sqrt(vmax*T)*W1 #W1[i-1]
+    vol_path=vol_path+kappa*dt*(theta-vmax)+xi*sqrt(vmax*dt)*W1 #W1[i-1]
     # print(paste("Vol=",vol_path))
     # print(paste("vol_path After=",vol_path))
-    spot_path=spot_path* exp((r - 0.5*vmax)*T +sqrt(vmax*T)*W2)
+    spot_path=spot_path* exp((r - 0.5*vmax)*dt +sqrt(vmax*dt)*W2)
     # print(paste("Spot=",spot_path))
 
   }
   payoff_sum=payoff_sum+max(spot_path-K,0)
   print(j)
 }
-option_price=(payoff_sum/nIterations)*exp(-r*T)
+option_price=(payoff_sum/nIterations)*exp(-r*dt)
 print(option_price)
 
 # Averages
