@@ -57,10 +57,7 @@ for( j in 1:nIterations) {
   W1=W2=0
   for( i in 1:nSteps){
     
-    X1 = rnorm(1,0,1) 
-    X2 = rnorm(1,0,1) 
-    W1=X1
-    W2= rho*X1+sqrt(1-rho^2)*X2
+    
 
     vmax= max(vol_path,0)
     # print(paste("vol_path Before=",vol_path))
@@ -69,7 +66,11 @@ for( j in 1:nIterations) {
     # print(paste("vol_path After=",vol_path))
     spot_path=spot_path* exp((r - 0.5*vmax)*dt +sqrt(vmax*dt)*W2)
     # print(paste("Spot=",spot_path))
-
+    
+    X1 = rnorm(1,0,1) 
+    X2 = rnorm(1,0,1) 
+    W1=X1
+    W2= rho*X1+sqrt(1-rho^2)*X2
   }
   payoff_sum=payoff_sum+max(spot_path-K,0)
   print(j)
@@ -77,7 +78,4 @@ for( j in 1:nIterations) {
 option_price=(payoff_sum/nIterations)*exp(-r*dt)
 print(option_price)
 
-# Averages
-mean(S[31,])
-var(S[31,])
 
