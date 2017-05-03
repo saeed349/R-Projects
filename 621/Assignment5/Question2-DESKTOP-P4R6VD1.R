@@ -56,6 +56,8 @@ for( j in 1:nIterations) {
   spot_path=S_0
   W1=W2=0
   for( i in 1:nSteps){
+    
+    
 
     vmax= max(vol_path,0)
     # print(paste("vol_path Before=",vol_path))
