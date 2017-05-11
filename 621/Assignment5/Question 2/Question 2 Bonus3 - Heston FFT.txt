@@ -1,0 +1,7 @@
+Heston Pricing using FFT
+Price - 6.806113
+Time - .0021
+RMSE - 1.23*10^-5
+Bias - 1.23*10^-5
+
+The code for this exercise was done in matlab

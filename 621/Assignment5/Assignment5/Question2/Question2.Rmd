@@ -1,0 +1,117 @@
+---
+title: "Question2"
+author: "Saeed Rahman"
+date: "May 2, 2017"
+output: html_document
+---
+
+
+## A) Heston Monte Carlo
+Function to Implement the Heston Monte Carlo for different models in Euler Discretization
+```{r}
+HestonMC<-function(case,nIterations,nSteps)
+{
+    
+  S_0=100.0
+  K = 100.0
+  r = 0.0319
+  v_0 = 0.010201
+  T = 1.00
+  
+  dt = T/nSteps
+  
+  rho = -0.7
+  kappa = 6.21
+  theta = 0.019
+  xi = 0.61
+  
+  rmse=0
+  payoff_sum=0
+  sumbias=0
+  
+  ptm <- proc.time()
+  for( j in 1:nIterations) {
+    W1=W2=0
+    vol_path=v_0
+    spot_path=S_0
+    vmax=0
+    for( i in 1:nSteps){
+      switch(case,
+        Full={# Full truncation
+          vmax= max(vol_path,0)
+          vol_path=vol_path+kappa*dt*(theta-vmax)+xi*sqrt(vmax*dt)*W1
+          spot_path=spot_path* exp((r - 0.5*vmax)*dt +sqrt(vmax*dt)*W2)
+        },
+        Partial={# Partial truncation
+          vmax= max(vol_path,0)
+          vol_path=vol_path+kappa*dt*(theta-vol_path)+xi*sqrt(vmax*dt)*W1
+          spot_path=spot_path* exp((r - 0.5*vmax)*dt +sqrt(vmax*dt)*W2)
+        },
+        HM={# Higham and Mao
+          vmax= abs(vol_path)
+          vol_path=vol_path+kappa*dt*(theta-vol_path)+xi*sqrt(vmax*dt)*W1
+          spot_path=spot_path* exp((r - 0.5*vmax)*dt +sqrt(vmax*dt)*W2)
+        },
+        Refl={# Reflection
+          vmax= abs(vol_path)
+          vol_path=abs(vol_path)+kappa*dt*(theta-vmax)+xi*sqrt(vmax*dt)*W1
+          spot_path=spot_path* exp((r - 0.5*vmax)*dt +sqrt(vmax*dt)*W2)
+        },
+        Abso={# Absorption
+          vmax= max(vol_path,0)
+          vol_path=vmax+kappa*dt*(theta-vmax)+xi*sqrt(vmax*dt)*W1
+          spot_path=spot_path* exp((r - 0.5*vmax)*dt +sqrt(vmax*dt)*W2)
+        }
+        )
+      
+      X1 = rnorm(1,0,1) 
+      X2 = rnorm(1,0,1) 
+      W1=X1
+      W2= rho*X1+sqrt(1-rho^2)*X2
+    }
+    payoff=max(spot_path-K,0)
+    payoff_sum=payoff_sum+payoff
+    rmse=rmse+(payoff-6.8061)^2
+    sumbias=sumbias+(max(spot_path-K,0)-6.8061)
+    # print(max(spot_path-K,0))
+  }
+  option_price=(payoff_sum/nIterations)*exp(-r*dt)
+  time=as.double((proc.time() - ptm)[3])
+  rmse=sqrt(rmse)/nIterations
+  sumbias=sumbias/nIterations
+  
+  list(price=option_price,time_taken=time,rmse=rmse,bias=sumbias)
+  # print((proc.time() - ptm)[3])
+  # print(option_price)
+}
+```
+Completed Table
+```{r}
+full=    HestonMC(nIterations = 10000,nSteps = 100,case = "Full")
+partial= HestonMC(nIterations = 10000,nSteps = 100,case = "Partial")
+hm=      HestonMC(nIterations = 10000,nSteps = 100,case = "HM")
+refl=    HestonMC(nIterations = 10000,nSteps = 100,case = "Refl")
+abso=    HestonMC(nIterations = 10000,nSteps = 100,case = "Abso")
+
+methods=c("Full","Partial","Higham and Mao","Reflection","Absorption")
+df=data.frame()
+df=rbind(df,full,partial,hm,refl,abso)
+df$Methods=methods
+print(df)
+
+```
+
+
+## 2) Bonus: Heston Analytical
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(knitr)
+read_chunk('HestonPriceExample.R')
+```
+
+```{r Heston_Analytical}
+```
+
+
+We can clearly see that the analytical price is faster.
+Among the different monte carlo methods, we can see that accuracy and computation times are inversly related and looking at the above result Higham and Mao gives the fastest result while the accurate price is from the Partial truncation method.

@@ -4,6 +4,9 @@ author: "Saeed Rahman"
 date: "May 2, 2017"
 output: html_document
 ---
+
+
+## A) Heston Monte Carlo
 Function to Implement the Heston Monte Carlo for different models in Euler Discretization
 ```{r}
 HestonMC<-function(case,nIterations,nSteps)
@@ -24,6 +27,7 @@ HestonMC<-function(case,nIterations,nSteps)
   
   rmse=0
   payoff_sum=0
+  sumbias=0
   
   ptm <- proc.time()
   for( j in 1:nIterations) {
@@ -59,12 +63,6 @@ HestonMC<-function(case,nIterations,nSteps)
           spot_path=spot_path* exp((r - 0.5*vmax)*dt +sqrt(vmax*dt)*W2)
         }
         )
-      # vmax= max(vol_path,0)
-      # vol_path=vol_path+kappa*dt*(theta-vmax)+xi*sqrt(vmax*dt)*W1 #W1[i-1]
-      # # print(paste("Vol=",vol_path))
-      # # print(paste("vol_path After=",vol_path))
-      # spot_path=spot_path* exp((r - 0.5*vmax)*dt +sqrt(vmax*dt)*W2)
-      # print(paste("Spot=",spot_path))
       
       X1 = rnorm(1,0,1) 
       X2 = rnorm(1,0,1) 
@@ -74,13 +72,15 @@ HestonMC<-function(case,nIterations,nSteps)
     payoff=max(spot_path-K,0)
     payoff_sum=payoff_sum+payoff
     rmse=rmse+(payoff-6.8061)^2
+    sumbias=sumbias+(max(spot_path-K,0)-6.8061)
     # print(max(spot_path-K,0))
   }
   option_price=(payoff_sum/nIterations)*exp(-r*dt)
   time=as.double((proc.time() - ptm)[3])
   rmse=sqrt(rmse)/nIterations
+  sumbias=sumbias/nIterations
   
-  list(price=option_price,time_taken=time,rmse=rmse)
+  list(price=option_price,time_taken=time,rmse=rmse,bias=sumbias)
   # print((proc.time() - ptm)[3])
   # print(option_price)
 }
@@ -101,22 +101,17 @@ print(df)
 
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+## 2) Bonus: Heston Analytical
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+library(knitr)
+read_chunk('HestonPriceExample.R')
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r Heston_Analytical}
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+We can clearly see that the analytical price is faster.
+Among the different monte carlo methods, we can see that accuracy and computation times are inversly related and looking at the above result Higham and Mao gives the fastest result while the accurate price is from the Partial truncation method.

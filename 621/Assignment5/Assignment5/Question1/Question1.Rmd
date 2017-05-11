@@ -1,0 +1,227 @@
+---
+title: "Question1"
+author: "Saeed Rahman"
+date: "May 4, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## A.
+
+Implement a simple Monte Carlo scheme using m simulation trials for Eu-
+ropean Call and Put options. This should be a function of n (number of
+time steps) and m. In all practical applications you should use at least 300
+time steps and at least 1 million simulated paths. Furthermore, implement
+a calculation of the standard error of the estimate of the option price and a
+way to time the simulation routine.
+
+```{r cars}
+Monte_Carlo_Pricing<-function(PutCall,S0,K,T,sigma,div,r,N,M){
+  ## Precompute constants
+  dt = T/N
+  nudt = (r-div-0.5*sigma^2)*dt
+  sigmasdt = sigma*sqrt(dt)
+  lns = log(S0)
+  
+  sum_CT = 0
+  sum_CT2 = 0
+  start.time = proc.time()
+  
+  for (j in 1:M){
+    lnSt = lns
+    for ( i in 1:N){
+      w = rnorm(N)
+      lnSt = lnSt + nudt + sigmasdt*w
+    }
+    St = exp(lnSt[N])
+    optionValue = ifelse(PutCall=='C', pmax(0,St-K), pmax(0,K-St))
+    sum_CT = sum_CT+optionValue
+    sum_CT2 = sum_CT2+optionValue*optionValue
+  }
+  option_value = sum_CT/M*exp(-r*T)
+  SD = sqrt((sum_CT2 - sum_CT*sum_CT/M)*exp(-2*r*T)/(M-1))
+  SE = SD/sqrt(M)
+  end.time = proc.time()
+  timetaken = end.time - start.time
+  list(option_value=option_value, SE=SE, time=timetaken[3])
+}
+```
+
+```{r, warning=FALSE}
+# 1 Million simulations is taking long time, so for the ease of demonstration, simulations limited to 10000.
+num.steps=300
+num.sim=1000
+r=.06
+sigma=.2
+div=.03
+S0=100
+K=100
+T=1
+MC_result<-Monte_Carlo_Pricing('C',S0,K,T,sigma,div,r,num.steps,num.sim)
+print(paste("Price=",round(MC_result$option_value,2)))
+print(paste("Standard Error=",round(MC_result$SE,2)))
+print(paste("Time Taken for Simulation=",round(MC_result$time,2)))
+# normalMCput<-Monte_Carlo_Pricing('P',S0,K,T,sigma,div,r,num.steps,num.sim)
+
+
+
+
+```
+## B.
+Implement a Monte Carlo scheme for European call and put options us-
+ing the antithetic variates method (see section 4.3 of the textbook), the
+delta{based control variate (section 4.5 of the textbook) with 1 = ????1, and
+the combined antithetic variates with delta-based control variate method.
+Report the values obtained in four columns: Monte Carlo (MC), MC with
+Antithetic Variates, MC with Delta-based Control Variate, and MC with
+both Antithetic Variates and Delta-based Control Variate. Report the esti-
+mated option values, the corresponding standard deviations, as well as the
+time it takes to obtain each result. Write a paragraph comparing the results
+you obtained. Discuss the methods implemented.
+
+```{r}
+
+num.sim2<-1000
+num.steps2<-300
+montecarloAthithetic<-function(PutCall,S0,K,T,sigma,div,r,N,M){
+  ## Precompute constants
+  dt = T/N
+  nudt = (r-div-0.5*sigma^2)*dt
+  sigmasdt = sigma*sqrt(dt)
+  lns = log(S0)
+  
+  sum_CT = 0
+  sum_CT2 = 0
+  start.time = proc.time()
+  
+  for (j in 1:M){
+    lnSt1 = lns
+    lnSt2 = lns
+    for ( i in 1:N){
+      w = rnorm(N)
+      lnSt1 = lnSt1 + nudt + sigmasdt*w
+      lnSt2 = lnSt2 + nudt + sigmasdt*(-w)
+    }
+    St1 = exp(lnSt1[N])
+    St2 = exp(lnSt2[N])
+    optionValue = ifelse(PutCall=='C', 0.5*(pmax(0,St1-K)+pmax(0,St2-K)), 0.5*(pmax(0,K-St1)+pmax(0,K-St2)))
+    sum_CT = sum_CT+optionValue
+    sum_CT2 = sum_CT2+optionValue*optionValue
+  }
+  option_value = sum_CT/M*exp(-r*T)
+  SD = sqrt((sum_CT2 - sum_CT*sum_CT/M)*exp(-2*r*T)/(M-1))
+  SE = SD/sqrt(M)
+  end.time = proc.time()
+  
+  timetaken = end.time - start.time
+  list(option_value=option_value, SE=SE, time=timetaken[3])
+}
+
+athitheticMC_Call<-montecarloAthithetic('C',S0,K,T,sigma,div,r,num.steps2,num.sim2)
+athitheticMC_Put<-montecarloAthithetic('P',S0,K,T,sigma,div,r,num.steps2,num.sim2)
+
+black_scholes_delta<-function(PutCall,S0,t,K,T,r,sigma,div){
+  d1<-(log(S0/K)+(r-div+sigma^2/2)*(T-t))/(sigma*sqrt(T-t))
+  d2<-d1-sigma*sqrt(T-t)
+  value = ifelse(PutCall=='C',exp(-div*(T-t))*pnorm(d1),exp(-div*(T-t))*(pnorm(d1)-1))
+  return(value)
+}
+
+montecarloDelta<-function(PutCall,S0,K,T,sigma,div,r,beta1,N,M){
+  ## Precompute constants
+  dt = T/N
+  nudt = (r-div-0.5*sigma^2)*dt
+  sigmasdt = sigma*sqrt(dt)
+  erddt = exp((r-div)*dt)
+  
+  sum_CT = 0
+  sum_CT2 = 0
+  start.time = proc.time()
+  
+  for (j in 1:M){
+    St = S0
+    cv = 0
+    for ( i in 1:N){
+      t = (i-1)*dt
+      delta = black_scholes_delta(PutCall,St,t,K,T,r,sigma,div)
+      w = rnorm(N)
+      Stn = St*exp(nudt + sigmasdt*w)
+      cv = cv + delta*(Stn-St*erddt)
+      St = Stn
+    }
+    
+    optionValue = ifelse(PutCall=='C', (pmax(0,St-K) + beta1*cv), (pmax(0,K-St) + beta1*cv))
+    sum_CT = sum_CT+optionValue
+    sum_CT2 = sum_CT2+optionValue*optionValue
+  }
+  option_value = sum_CT/M*exp(-r*T)
+  SD = sqrt((sum_CT2 - sum_CT*sum_CT/M)*exp(-2*r*T)/(M-1))
+  SE = SD/sqrt(M)
+  end.time = proc.time()
+  
+  timetaken = end.time - start.time
+  list(option_value=option_value, SE=SE, time=timetaken[3])
+}
+beta1<-(-1)  ##given
+deltaMC_Call<-montecarloDelta('C',S0,K,T,sigma,div,r,beta1,num.steps2,num.sim2)
+deltaMC_Put<-montecarloDelta('P',S0,K,T,sigma,div,r,beta1,num.steps2,num.sim2)
+
+
+montecarloAthiandDelta<-function(PutCall,S0,K,T,sigma,div,r,beta1,N,M){
+  ## Precompute constants
+  dt = T/N
+  nudt = (r-div-0.5*sigma^2)*dt
+  sigmasdt = sigma*sqrt(dt)
+  erddt = exp((r-div)*dt)
+  
+  sum_CT = 0
+  sum_CT2 = 0
+  start.time = proc.time()
+  
+  for (j in 1:M){
+    St1 = S0
+    St2 = S0
+    cv1 = 0
+    cv2 = 0
+    
+    for ( i in 1:N){
+      t = (i-1)*dt
+      delta1 = black_scholes_delta(PutCall,St1,t,K,T,r,sigma,div)
+      delta2 = black_scholes_delta(PutCall,St2,t,K,T,r,sigma,div)
+      w = rnorm(N)
+      Stn1 = St1*exp(nudt + sigmasdt*w)
+      Stn2 = St2*exp(nudt + sigmasdt*(-w))
+      cv1 = cv1 + delta1*(Stn1-St1*erddt)
+      cv2 = cv2 + delta2*(Stn2-St2*erddt)
+      St1 = Stn1
+      St2 = Stn2
+    }
+    optionValue = ifelse(PutCall=='C', 0.5*(pmax(0,St1-K) + beta1*cv1 + pmax(0,St2-K) + beta1*cv2), 0.5*(pmax(0,K-St1) + beta1*cv1 + pmax(0,K-St2) + beta1*cv2))
+    sum_CT = sum_CT+optionValue
+    sum_CT2 = sum_CT2+optionValue*optionValue
+  }
+  option_value = sum_CT/M*exp(-r*T)
+  SD = sqrt((sum_CT2 - sum_CT*sum_CT/M)*exp(-2*r*T)/(M-1))
+  SE = SD/sqrt(M)
+  end.time = proc.time()
+  
+  timetaken = end.time - start.time
+  list(option_value=option_value, SE=SE, time=timetaken[3])
+}
+AthiandDeltaMC_Call<-montecarloAthiandDelta('C',S0,K,T,sigma,div,r,beta1,num.steps2,num.sim2)
+AthiandDeltaMC_Put<-montecarloAthiandDelta('P',S0,K,T,sigma,div,r,beta1,num.steps2,num.sim2)
+```
+
+
+
+```{r}
+methods=c("MC", "MC-Antithetic Variates", "MC-Delta","MC-AntitheticDelta")
+df=data.frame()
+df=rbind(df,MC_result,athitheticMC_Call,deltaMC_Call,AthiandDeltaMC_Call)
+df$Methods=methods
+print(df)
+
+```
