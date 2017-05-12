@@ -169,7 +169,7 @@ Diff.mle <-function(fx,gx,data)
   list("Info"=Info,"Coef"=Coef)
 }
 
-pmle_type=2
+pmle_type=1 
 best_model={}
 params={}
 
@@ -193,8 +193,9 @@ best_model[2]=fit2$best.model
 
 print("The parameter estimates are:")
 ls2=Diff.mle(fx=fx[fit2$best.model],gx=gx[fit2$best.model],data = stock2)
-params[2]=list(ls2)
 ls2=ls2$Coef[,pmle_type]
+params[2]=list(ls2)
+
 
 print(ls2)
 
@@ -226,6 +227,7 @@ print(ls4)
 
 #Part 3----
 
+
 stockData <- new.env()
 lookup.symb=c("TWX","FOXA","ROST","TJX")
 getSymbols(lookup.symb, from="2012-01-01", env=stockData, src="yahoo")
@@ -244,53 +246,72 @@ cor_matrix=cor(ReturnMatrix)
 chol_upper=chol(cor_matrix)
 
 
+
 #MonteCarlo Simulation----
-n_iterations=1000
-n_steps=255
-s1={}
-s2={}
-s3={}
-s4={}
-dt=1/255
-w=as.vector(matrix( rnorm(1*4,mean=0,sd=1), 1, 4))
-cor_w=chol_upper%*%w
+n_iterations=10
+n_steps=252
+stocks_sim=matrix(0,n_iterations,4)
+stocks_sim[,1]=stock1[1]
+stocks_sim[,2]=stock2[1]
+stocks_sim[,3]=stock3[1]
+stocks_sim[,4]=stock4[1]
+
+sim1={}
+
+dt=1/n_steps
+
 for(i in 1:n_iterations)
 {
-  
+  print(i)
   for(j in 1:n_steps)
   {
-    
+    w=as.vector(matrix( rnorm(1*4,mean=0,sd=1), 1, 4))
+    cor_w=chol_upper%*%w
     for(k in 1:4)
     {
-      if(best_model[k]==1)
+     if(best_model[k]==1)
       {
-        s1[i]=s1[i]+(params[[k]][1]*dt*s1[i])+(params[[k]][2]*s1[i]*w[1])
+        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]*dt*stocks_sim[i,k])+(params[[k]][2]*stocks_sim[i,k]*w[1])
+        if(i==1 && k==1 && length(sim1)<300){
+          sim1=append(sim1,stocks_sim[i,k])
+          print(paste("i=",i,"j=",j,"k=",k,"Price=",stocks_sim[i,k]))
+          print(length(sim1))
+        }
       }
       else if(best_model[k]==2)
       {
-        s2[i]=s2[i]+(params[[k]][1]+params[[k]][2]*s2[i])*dt+(params[[k]][3]*s2[i]^params[[k]][4]*w[i])
+        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]+params[[k]][2]*stocks_sim[i,k])*dt+(params[[k]][3]*stocks_sim[i,k]^params[[k]][4]*w[i])
       }
       else if(best_model[k]==3)
       {
-        s3[i]=s3[i]+(params[[k]][1]*s3[i]*dt)+(params[[k]][2]+(params[[k]][3]*s3[i]^params[[k]][4]*w[i]))
+        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]*stocks_sim[i,k]*dt)+(params[[k]][2]+(params[[k]][3]*stocks_sim[i,k]^params[[k]][4]*w[i]))
       }
       else if(best_model[k]==4)
       {
-        s4[i]=s4[i]+(params[[k]][1]*s4[i]*dt)+(params[[k]][2]*s4[i]^(3/2)*w[i])
+        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]*stocks_sim[i,k]*dt)+(params[[k]][2]*stocks_sim[i,k]^(3/2)*w[i])
       }
       else if(best_model[k]==5)
       {
-        s5[i]=s5[i]+(params[[k]][1]+params[[k]][2])*dt+(params[[k]][3]+params[[k]][4]*log(s5[i]))*s5[i]*w[i]
+        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]+params[[k]][2])*dt+(params[[k]][3]+params[[k]][4]*log(stocks_sim[i,k]))*stocks_sim[i,k]*w[i]
       }
-      
     }
     
   }
 }
+stocks_sim
 
-k=1
-if(best_model[k]==2)
-{
-  print("kk")
-}
+plot(sim1)
+
+require(yuima)
+read= read.csv("http://chart.yahoo.com/table.csv?s=goog&g=d&x=.csv")
+D=setYuima(data=setData(as.double(TWX[,6])))
+D
+str(D@data)
+m1=setModel(drift="theta*x",diffusion="sigma*x", state.var="x",time.var="t",solve.var="x",xinit=0.5)
+X=simulate(m1,true.param=list(sigma=0.2,theta=2))
+initialise=list(sigma=0.5,theta=1)
+lowbound=list(sigma=0,theta=0)
+upbound=list(sigma=2,theta=3)
+mle=qmle(X,start=initialise,lower=lowbound,upper=upbound)
+summary(mle)
 
