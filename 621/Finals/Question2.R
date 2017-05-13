@@ -81,6 +81,8 @@ fit # print results
 
 
 
+
+
 #Part 2----
 
 rank(fit$loadings[,1])
@@ -169,7 +171,7 @@ Diff.mle <-function(fx,gx,data)
   list("Info"=Info,"Coef"=Coef)
 }
 
-pmle_type=1 
+pmle_type=2 
 best_model={}
 params={}
 
@@ -272,7 +274,7 @@ for(i in 1:n_iterations)
      if(best_model[k]==1)
       {
         stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]*dt*stocks_sim[i,k])+(params[[k]][2]*stocks_sim[i,k]*w[1])
-        if(i==1 && k==1 && length(sim1)<300){
+        if(i==1 && k==3 && length(sim1)<300){
           sim1=append(sim1,stocks_sim[i,k])
           print(paste("i=",i,"j=",j,"k=",k,"Price=",stocks_sim[i,k]))
           print(length(sim1))
@@ -302,16 +304,27 @@ stocks_sim
 
 plot(sim1)
 
+#Part5-----
+
+etf=ts(XLY[,6])
+fit_etf=Best.fit(data =etf,pmle = pmle[pmle_type])
+print(paste("Best model = model ",fit4$best.model))
+
+
+print("The parameter estimates are:")
+ls_etf=Diff.mle(fx=fx[fit_etf$best.model],gx=gx[fit_etf$best.model],data = etf)
+ls_etf=ls4$Coef[,pmle_type]
+
+
+
 require(yuima)
-read= read.csv("http://chart.yahoo.com/table.csv?s=goog&g=d&x=.csv")
 D=setYuima(data=setData(as.double(TWX[,6])))
-D
 str(D@data)
 m1=setModel(drift="theta*x",diffusion="sigma*x", state.var="x",time.var="t",solve.var="x",xinit=0.5)
-X=simulate(m1,true.param=list(sigma=0.2,theta=2))
+X=simulate(m1,true.param=list(sigma=0.4,theta=4))
 initialise=list(sigma=0.5,theta=1)
 lowbound=list(sigma=0,theta=0)
 upbound=list(sigma=2,theta=3)
-mle=qmle(X,start=initialise,lower=lowbound,upper=upbound)
+mle=qmle(D@data,start=initialise,lower=lowbound,upper=upbound)
 summary(mle)
 
