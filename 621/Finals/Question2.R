@@ -28,7 +28,7 @@ for(i in 1:length(lookup.symb))
 
 cor(ReturnMatrix)
 
-
+# First Method-----
 
 Prin.Comp = prcomp(ReturnMatrix, scale = T) #by default R centers the variables. Scale also makes then sd=1
 summary(Prin.Comp)
@@ -315,16 +315,19 @@ print("The parameter estimates are:")
 ls_etf=Diff.mle(fx=fx[fit_etf$best.model],gx=gx[fit_etf$best.model],data = etf)
 ls_etf=ls4$Coef[,pmle_type]
 
-
+getSymbols("DIS",from="2012-01-01")
 
 require(yuima)
-D=setYuima(data=setData(as.double(TWX[,6])))
-str(D@data)
 m1=setModel(drift="theta*x",diffusion="sigma*x", state.var="x",time.var="t",solve.var="x",xinit=0.5)
-X=simulate(m1,true.param=list(sigma=0.4,theta=4))
+
+D=setYuima(data=setData(as.double(DIS[,6])),model = m1)
+str(D@data)
+
+X=simulate(m1,true.param=list(sigma=-0.007829953,theta=0.140447119))
 initialise=list(sigma=0.5,theta=1)
 lowbound=list(sigma=0,theta=0)
 upbound=list(sigma=2,theta=3)
-mle=qmle(D@data,start=initialise,lower=lowbound,upper=upbound)
+mle=qmle(D,start=initialise,lower=lowbound,upper=upbound)
 summary(mle)
+
 

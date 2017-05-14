@@ -1,9 +1,9 @@
 library(quantmod)
 stockData <- new.env()
-lookup.symb=c("YHOO","GOOG","IBM","INTC","MSFT")
-# lookup.symb=c("AAPL","AXP","BA", "CAT","CSCO","CVX","KO","DD","XOM","GE","GS","HD",
-# "IBM","INTC","JNJ","JPM","MCD","MMM","MRK","MSFT","NKE","PFE","PG","TRV","UNH","UTX",
-# "VZ","WMT","DIS")
+# lookup.symb=c("YHOO","GOOG","IBM","INTC","MSFT")
+lookup.symb=c("AAPL","AXP","BA", "CAT","CSCO","CVX","KO","DD","XOM","GE","GS","HD",
+"IBM","INTC","JNJ","JPM","MCD","MMM","MRK","MSFT","NKE","PFE","PG","TRV","UNH","UTX",
+"VZ","WMT","DIS")
 #VISA problem
 getSymbols("V",from="2005-01-03")
 getSymbols(lookup.symb, from="2005-01-03", env=stockData, src="yahoo")
@@ -18,7 +18,6 @@ for(i in 1:length(lookup.symb))
   colnames(ReturnMatrix)[i]=lookup.symb[i]
 }
 
-cor(ReturnMatrix)
 
 
 
@@ -47,6 +46,7 @@ cumsum(propvariance)
 
 plot(propvariance, type="b")
 
+
 plot(cumsum(propvariance), type="b") # PCA does not work well for this data
 
 ## Using another function
@@ -64,7 +64,7 @@ biplot(Prin.Comp1)
 #and rotate principal components.
 # Varimax Rotated Principal Components
 # retaining 2 components 
-install.packages("psych")
+# install.packages("psych")
 library(psych)
 fit <- principal(cor(ReturnMatrix), nfactors=2, rotate="varimax", n.obs=dim(ReturnMatrix)[1])
 fit # print results
@@ -90,7 +90,7 @@ fit <- fa(cor(ReturnMatrix), nfactors=2, n.obs=dim(ReturnMatrix)[1])
 #This is because the function always uses the correlation matrix
 fit # print results
 
-install.packages("GPArotation")
+#install.packages("GPArotation")
 
 
 # Determine Number of Factors to Extract
