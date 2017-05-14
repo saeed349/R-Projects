@@ -88,7 +88,8 @@ Asian_MC<-function(S0, K, t, r,div=0, sigma,n.sims=1000)
   
   list(arthimetic.price=arthimetic.price,geometric.price=geometric.price,
        std.dev.arthimetic=std.dev.arthimetic, std.error.arthimetic=std.error.arthimetic,
-       std.dev.geometric=std.dev.geometric,std.error.geometric=std.error.geometric)
+       std.dev.geometric=std.dev.geometric,std.error.geometric=std.error.geometric,
+       sim.prices.arthimetic=sim.prices.arthimetic, sim.prices.geometric=sim.prices.geometric)
 }
 ```
 
@@ -96,9 +97,37 @@ Asian_MC<-function(S0, K, t, r,div=0, sigma,n.sims=1000)
 ```{r}
 asian.call.price=Asian_MC(S0 = 100,K = 100, r = .03, sigma = .3, t = 5, n.sims = 10000 )
 
+```
+## D)
 
+```{r}
+r=.03
+t=5
+
+
+X=asian.call.price$sim.prices.geometric*exp(-r*t)
+Y=asian.call.price$sim.prices.arthimetic*exp(-r*t)
+
+b=sum((X-mean(X))*(Y-mean(Y)))/(sum(X-mean(X)^2))
+print(paste("Slope=",b))
 
 ```
+## E)
+```{r}
+
+error=mean(X)-asian.geometric.call.price
+
+print(paste("Error=",error))
+
+```
+
+## F)
+```{r}
+modified.arthimetic.price=mean(Y)-b*error
+
+print(paste("Modified Arthimetic Price=",modified.arthimetic.price))
+```
+
 
 Arthimetic-17.865
 Geometric- 15.50
@@ -106,4 +135,120 @@ Geometric- 15.50
 SD=30.60
 SE=.30
 
+Modified Arthimetic= 
+
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+## BONUS
+
+```{r}
+Asian_MC_Market<-function(S0, K, t, r,div=0, sigma,n.sims=1000)
+{
+  N=252*t
+  dt=1/252
+  spot.steps={}
+  sim.prices.arthimetic={}
+  sim.prices.geometric={}
+  
+  mu=(r-div-(0.5*(sigma^2)))*dt
+  sigma=sigma*sqrt(dt)
+  
+  for(i in 1:n.sims)
+  {
+    spot.steps[1]=S0
+    for(j in 2:N)
+    {
+      spot.steps[j]=spot.steps[j-1]*exp(mu+sigma*rnorm(1))
+      # print(paste("PRICE_STEPS=",spot.steps[j]))
+    }
+    arthimetic.price=mean(spot.steps)
+    geometric.price=spot.steps^(1/N)
+    geometric.price=prod(geometric.price)
+    
+    
+    sim.prices.arthimetic[i]=max(arthimetic.price-K,0)
+    sim.prices.geometric[i]=max(geometric.price-K,0)
+    # print(paste("SIMS..........................",i))
+    # print(sim.prices.arthimetic[i])
+    # print(sim.prices.geometric[i])
+    
+  }
+  arthimetic.price=mean(sim.prices.arthimetic)*exp(-r*t)
+  geometric.price=mean(sim.prices.geometric)*exp(-r*t)
+  # print(paste("Arthimetic Asian Call Price=",arthimetic.price))
+  # print(paste("Geometric Asian Call Price=",geometric.price))
+  
+  std.dev.arthimetic=sqrt((sum(sim.prices.arthimetic^2)-(sum(sim.prices.arthimetic)*mean(sim.prices.arthimetic)))
+                          *(exp(-2*r*t)/(n.sims-1)))
+  std.error.arthimetic=std.dev.arthimetic/sqrt(n.sims)
+  
+  std.dev.geometric=sqrt((sum(sim.prices.geometric^2)-(sum(sim.prices.geometric)*mean(sim.prices.geometric)))
+                          *(exp(-2*r*t)/(n.sims-1)))
+  
+  std.error.geometric=std.dev.geometric/sqrt(n.sims)
+  
+  #---- Added
+  X=sim.prices.geometric*exp(-r*t)
+  Y=sim.prices.arthimetic*exp(-r*t)
+  b=sum((X-mean(X))*(Y-mean(Y)))/(sum(X-mean(X)^2))
+  
+  analytical.price=Geometric_Asian_Analytical(S0=S0,K = K,t = t,r = 1.182/100,sigma = sigma/sqrt(dt))
+  error=mean(X)-analytical.price
+  modified.arthimetic.price=mean(Y)-b*error
+  # print(modified.arthimetic.price)
+  
+  list(analytical.price=analytical.price,
+       arthimetic.price=arthimetic.price,geometric.price=geometric.price,
+       std.dev.arthimetic=std.dev.arthimetic, std.error.arthimetic=std.error.arthimetic,
+       std.dev.geometric=std.dev.geometric,std.error.geometric=std.error.geometric,
+       slope=b,error=error,modified.arthimetic.price=modified.arthimetic.price)
+}
+
+```
+
+```{r}
+library(quantmod)
+getSymbols("IBM",from="2016-05-12", to="2017-05-12")
+S0=coredata(IBM["2017-05-12",6])
+df=read.csv("IBM_Melted.csv")
+
+
+
+
+sigma=sd(periodReturn(IBM,period='daily',subset='2016-05-12::'))*sqrt(252)
+
+
+df$days=as.integer(as.Date(df[,1],format="%m/%d/%Y")-as.Date("05/12/17",format="%m/%d/%y"))
+df$t=as.double((as.Date(df[,1],format="%m/%d/%Y")-as.Date("05/12/17",format="%m/%d/%y"))/252)
+
+strike={}
+time.to.maturity={}
+geometric.price={}
+arthemetic.price={}
+slope={}
+analytical.price={}
+modified.arthimetic={}
+error={}
+
+for (i in 1:nrow(df))
+{
+  
+  price.details=Asian_MC_Market(S0=S0,K = df$Strike[i],t = df$t[i],r = 1.182/100,sigma = sigma)
+  analytical.price[i]=price.details$analytical.price
+  geometric.price[i]=price.details$geometric.price
+  arthemetic.price[i]=price.details$arthimetic.price
+  slope[i]=price.details$slope
+  error[i]=price.details$error
+  modified.arthimetic[i]=price.details$modified.arthimetic.price
+  print(i)
+}
+
+df$Analytical_Price=round(analytical.price,2)
+df$Geometric_Price=round(geometric.price,2)
+df$Arthemetic_Price=round(arthemetic.price,2)
+df$Slope=round(slope,3)
+df$Modified_Arthimetic=round(modified.arthimetic,3)
+df$Error=round(error,3)
+
+```
