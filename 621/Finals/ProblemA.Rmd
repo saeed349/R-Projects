@@ -9,22 +9,101 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## 1)
+Analytical price of Geometric Asian Option
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+### Defining the function 
+```{r}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+Geometric_Asian_Analytical<-function(S0, K, t, r,div=0, sigma){
+  N=252*t
+  sigma.new=sigma*sqrt((2*N+1)/(6*(N+1)))
+  rho=1/2.0*(r-div-sigma*sigma/2.0+sigma.new*sigma.new)
+  d1=1/(sqrt(t)*sigma.new)*(log(S0/K)+(rho+sigma.new*sigma.new/2.0)*t)
+  d2=1/(sqrt(t)*sigma.new)*(log(S0/K)+(rho-sigma.new*sigma.new/2.0)*t)
+  price=exp(-r*t)*( S0*exp(rho*t)*pnorm(d1) -K*pnorm(d2))
+  return(price)
+}
 ```
 
-## Including Plots
+```{r}
+asian.geometric.call.price=Geometric_Asian_Analytical(S0 = 100,K = 100, r = .03, sigma = .3, t = 5 )
+print(paste("Geometric Asian Call Option Price=",asian.geometric.call.price))
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
+
+## 2)
+
+```{r}
+Asian_MC<-function(S0, K, t, r,div=0, sigma,n.sims=1000)
+{
+  N=252*t
+  dt=1/252
+  spot.steps={}
+  sim.prices.arthimetic={}
+  sim.prices.geometric={}
+  
+  mu=(r-div-(0.5*(sigma^2)))*dt
+  sigma=sigma*sqrt(dt)
+  
+  for(i in 1:n.sims)
+  {
+    spot.steps[1]=S0
+    for(j in 2:N)
+    {
+      spot.steps[j]=spot.steps[j-1]*exp(mu+sigma*rnorm(1))
+      # print(paste("PRICE_STEPS=",spot.steps[j]))
+    }
+    arthimetic.price=mean(spot.steps)
+    geometric.price=spot.steps^(1/N)
+    geometric.price=prod(geometric.price)
+    
+    
+    sim.prices.arthimetic[i]=max(arthimetic.price-K,0)
+    sim.prices.geometric[i]=max(geometric.price-K,0)
+    # print(paste("SIMS..........................",i))
+    # print(sim.prices.arthimetic[i])
+    # print(sim.prices.geometric[i])
+    
+  }
+  arthimetic.price=mean(sim.prices.arthimetic)*exp(-r*t)
+  geometric.price=mean(sim.prices.geometric)*exp(-r*t)
+  print(paste("Arthimetic Asian Call Price=",arthimetic.price))
+  print(paste("Geometric Asian Call Price=",geometric.price))
+  
+  std.dev.arthimetic=sqrt((sum(sim.prices.arthimetic^2)-(sum(sim.prices.arthimetic)*mean(sim.prices.arthimetic)))
+                          *(exp(-2*r*t)/(n.sims-1)))
+  std.error.arthimetic=std.dev.arthimetic/sqrt(n.sims)
+  
+  std.dev.geometric=sqrt((sum(sim.prices.geometric^2)-(sum(sim.prices.geometric)*mean(sim.prices.geometric)))
+                          *(exp(-2*r*t)/(n.sims-1)))
+  
+  std.error.geometric=std.dev.geometric/sqrt(n.sims)
+  
+  
+  print(paste("Standard Deviation of Arthimetic Option=",std.dev.arthimetic))
+  print(paste("Standard Error of Arthimetic Option=",std.error.arthimetic))
+  print(paste("Standard Deviation of Geometric Option=",std.dev.geometric))
+  print(paste("Standard Error of Geometric Option=",std.error.geometric))
+  
+  list(arthimetic.price=arthimetic.price,geometric.price=geometric.price,
+       std.dev.arthimetic=std.dev.arthimetic, std.error.arthimetic=std.error.arthimetic,
+       std.dev.geometric=std.dev.geometric,std.error.geometric=std.error.geometric)
+}
+```
+
+
+```{r}
+asian.call.price=Asian_MC(S0 = 100,K = 100, r = .03, sigma = .3, t = 5, n.sims = 10000 )
+
+
+
+```
+
+Arthimetic-17.865
+Geometric- 15.50
+
+SD=30.60
+SE=.30
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
