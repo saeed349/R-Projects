@@ -219,8 +219,8 @@ df=read.csv("IBM_Melted.csv")
 sigma=sd(periodReturn(IBM,period='daily',subset='2016-05-12::'))*sqrt(252)
 
 
-df$days=as.integer(as.Date(df[,1],format="%m/%d/%Y")-as.Date("05/12/17",format="%m/%d/%y"))
-df$t=as.double((as.Date(df[,1],format="%m/%d/%Y")-as.Date("05/12/17",format="%m/%d/%y"))/252)
+df$Days_till_expirty=as.integer(as.Date(df[,1],format="%m/%d/%Y")-as.Date("05/12/17",format="%m/%d/%y"))
+df$T=as.double((as.Date(df[,1],format="%m/%d/%Y")-as.Date("05/12/17",format="%m/%d/%y"))/252)
 
 strike={}
 time.to.maturity={}
@@ -234,21 +234,22 @@ error={}
 for (i in 1:nrow(df))
 {
   
-  price.details=Asian_MC_Market(S0=S0,K = df$Strike[i],t = df$t[i],r = 1.182/100,sigma = sigma)
+  price.details=Asian_MC_Market(S0=S0,K = df$Strike[i],t = df$T[i],r = 1.182/100,sigma = sigma)
   analytical.price[i]=price.details$analytical.price
   geometric.price[i]=price.details$geometric.price
   arthemetic.price[i]=price.details$arthimetic.price
   slope[i]=price.details$slope
   error[i]=price.details$error
   modified.arthimetic[i]=price.details$modified.arthimetic.price
-  print(i)
 }
 
 df$Analytical_Price=round(analytical.price,2)
 df$Geometric_Price=round(geometric.price,2)
 df$Arthemetic_Price=round(arthemetic.price,2)
 df$Slope=round(slope,3)
-df$Modified_Arthimetic=round(modified.arthimetic,3)
+df$Modified_Arthimetic_Price=round(modified.arthimetic,3)
 df$Error=round(error,3)
+
+write.csv(df, file = "ProblemA_Bonus_Result.csv")
 
 ```

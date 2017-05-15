@@ -21,7 +21,7 @@ uence the
 most these PCA's.
 
 ### Getting the data
-```{r}
+```{r, warning=FALSE}
 library(quantmod)
 getSymbols("XLY",from="2012-01-01")
 
@@ -123,7 +123,8 @@ fviz_pca_contrib(res.pca, choice = "var", axes = 1)
 fviz_pca_contrib(res.pca, choice = "var", axes = 2)
 ```
 
-### Total contribution on PC1 and PC2
+### Total contribution on PC1 and 
+PC2
 ```{r}
 fviz_pca_contrib(res.pca, choice = "var", axes = 1:2)
 
@@ -186,17 +187,16 @@ Best.fit<-function(data,pmle)
 {
   #model1
   mod1 <- fitsde(data=data,drift=fx[1],diffusion=gx[1],start = 
-                   list(theta1=1, theta2=1,theta3=1),pmle=pmle)
+                   list(theta1=1, theta2=1),pmle=pmle)
   #model 2
   mod2 <- fitsde(data=data,drift=fx[2],diffusion=gx[2],start = 
                    list(theta1=1, theta2=1,theta3=1,theta4=1),pmle=pmle)
   #model 3
   mod3 <- fitsde(data=data,drift=fx[3],diffusion=gx[3],start = 
-                   list(theta1=1, theta2=1,theta3=1),pmle=pmle)
+                   list(theta1=1, theta2=1,theta3=1,theta4=1),pmle=pmle)
   #model 4
   mod4 <- fitsde(data=data,drift=fx[4],diffusion=gx[4],start = 
-                   list(theta1=1, theta2=1,theta3=1),pmle=pmle)
-  
+                   list(theta1=1, theta2=1),pmle=pmle)
   #model 5
   mod5 <- fitsde(data=data,drift=fx[5],diffusion=gx[5],start = 
                    list(theta1=1, theta2=1,theta3=1, theta4=1),pmle=pmle)
@@ -245,7 +245,7 @@ print(ls1)
 
 ### For Stock 2
 
-fit2=Best.fit(data =stock2,pmle = pmle[2])
+fit2=Best.fit(data =stock2,pmle = pmle[pmle_type])
 print(paste("Best model = model ",fit2$best.model))
 best_model[2]=fit2$best.model
 
@@ -284,7 +284,7 @@ params[4]=list(ls4)
 print(ls4)
 ```
 ### Estimating Parameters using Yuima Package
-```{r}
+```{r, warning=FALSE}
 library(yuima)
 pmle_type=2
 best_model={}
@@ -370,8 +370,21 @@ print(ls4)
 Estimate the correlation matrix  for the 4 stocks based on historical
 data.
 ```{r}
+lookup.symb=c("TJX","DIS","HD","ROST","XLY")
 
-cor(ReturnMatrix)
+getSymbols(lookup.symb, from="2012-01-01", src="yahoo")
+
+ReturnMatrix=NULL
+
+
+for(i in 1:length(lookup.symb))
+{
+  tmp <- get(lookup.symb[i], pos=stockData)   # get data from stockData environment  
+  ReturnMatrix=cbind(ReturnMatrix,   (Cl(tmp)-Op(tmp)) / Op(tmp)   )
+  colnames(ReturnMatrix)[i]=lookup.symb[i]
+}
+cor_matrix=cor(ReturnMatrix[,-5])
+print(cor_matrix)
 ```
 ## 4)
 
@@ -403,37 +416,45 @@ dt=1/n_steps
 for(i in 1:n_iterations)
 {
   print(i)
-  for(j in 1:n_steps)
+  for(j in 2:n_steps)
   {
     w=as.vector(matrix( rnorm(1*4,mean=0,sd=1), 1, 4))
     cor_w=chol_upper%*%w
     for(k in 1:4)
     {
-     if(best_model[k]==1)
+      
+      theta1=params[[k]][1]
+      theta2=params[[k]][2]
+      theta3=params[[k]][3]
+      theta4=params[[k]][4]
+      s=stocks_sim[i,k]
+      
+      theta1=0.0007088253
+      theta2=0.0087381053
+      
+      
+      if(best_model[k]==1)
       {
-        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]*dt*stocks_sim[i,k])+(params[[k]][2]*stocks_sim[i,k]*w[1])
-        if(i==1 && k==3 && length(sim1)<300){
+        stocks_sim[i,k]=s+(theta1*dt*s)+(theta2*s*w[1])
+        if(i==1 && k==1){
           sim1=append(sim1,stocks_sim[i,k])
-          print(paste("i=",i,"j=",j,"k=",k,"Price=",stocks_sim[i,k]))
-          print(length(sim1))
         }
       }
       else if(best_model[k]==2)
       {
-        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]+params[[k]][2]*stocks_sim[i,k])*dt+
-          (params[[k]][3]*stocks_sim[i,k]^params[[k]][4]*w[i])
+        stocks_sim[i,k]=s+(theta1+theta2*s)*dt+(theta3*(s^theta4)*w[i])
       }
       else if(best_model[k]==3)
       {
-        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]*stocks_sim[i,k]*dt)+(params[[k]][2]+(params[[k]][3]*stocks_sim[i,k]^params[[k]][4]*w[i]))
+        stocks_sim[i,k]=s+(theta1*s*dt)+(theta2+(theta3*(s^theta4)*w[i]))
       }
       else if(best_model[k]==4)
       {
-        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]*stocks_sim[i,k]*dt)+(params[[k]][2]*stocks_sim[i,k]^(3/2)*w[i])
+        stocks_sim[i,k]=s+(theta1*s*dt)+(theta2*(s^(3/2))*w[i])
       }
       else if(best_model[k]==5)
       {
-        stocks_sim[i,k]=stocks_sim[i,k]+(params[[k]][1]+params[[k]][2])*dt+(params[[k]][3]+params[[k]][4]*log(stocks_sim[i,k]))*stocks_sim[i,k]*w[i]
+        stocks_sim[i,k]=s+(theta1+theta2*s)*dt+(theta3+theta4*log(s))*s*w[i]
       }
     }
     
@@ -441,16 +462,63 @@ for(i in 1:n_iterations)
 }
 stocks_sim
 
-plot(sim1)
+
+```
+
+## 5)
+
+Download daily data for the main ETF for the same exact period as before.We will fit a geometric Brownian motion to it: and Get the values for mu and sigma.
+
+
+```{r, warning=FALSE}
+getSymbols("XLY",from="2012-01-01")
+
+etf_price=ts(XLY[,6])
+  
+# pmle_type=2
+# fit_etf=Best.fit(data =stock2,pmle = pmle[pmle_type])
+# print(paste("Best model = model ",fit_etf$best.model))
+# # best_model[2]=fit2$best.model
+
+print("The parameter estimates are:")
+ls_etf=Diff.mle(fx=fx[1],gx=gx[1],data = etf_price)
+ls_etf=ls_etf$Coef[,pmle_type]
+print(ls_etf)
+# params[2]=list(ls2)
+
+
+D=setYuima(data=setData(as.double(etf_price)),model = model1)
+initialise=list(theta1=0,theta2=0)
+lowbound=list(theta1=-5,theta2=-5)
+upbound=list(theta1=5,theta2=5)
+mle=qmle(D,start=initialise,lower=lowbound,upper=upbound)
+summary(mle)
 
 ```
 
 
+## 6)
+Run a multivariate regression using the historical data. The response
+is the ETF return and the predictors are the 4 stocks you chose earlier.
+Please record the regression coecients. These are going to be the weights
+for the basket option we will price next.
+```{r}
+regressor=lm(formula=XLY~.,
+             data=ReturnMatrix)
+
+summary(regressor)
+
+regressor$coefficients
+```
+
+## 7)
+We will price a nonstandard contract next.
+
+```{r}
 
 
 
-
-
+```
 
 
 
