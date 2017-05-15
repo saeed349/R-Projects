@@ -306,12 +306,12 @@ print("The parameter estimates are:")
 D=setYuima(data=setData(as.double(DIS[,6])),model = model3)
 initialise=list(theta1=0,theta2=0,theta3=0,theta4=0)
 lowbound=list(theta1=-5,theta2=-5,theta3=-5,theta4=-5)
-upbound=list(theta1=5,theta2=5,theta3=5,theta4=5)
+upbound=list(theta1=10,theta2=10,theta3=10,theta4=10)
 mle=qmle(D,start=initialise,lower=lowbound,upper=upbound)
 summary(mle)
 
-X=simulate(model3,true.param=list(theta1=0.140447119,theta2=-0.007829953,theta3=1.000000000,theta4=1.000000000),nsim = 1000,xinit = 39)
-plot(X)
+# X=simulate(model3,true.param=list(theta1=0.140447119,theta2=-0.007829953,theta3=1.000000000,theta4=1.000000000),nsim = 1000,xinit = 39)
+# plot(X)
 
 ### For Stock 1
 fit1=Best.fit(data =stock1,pmle = pmle[pmle_type])
