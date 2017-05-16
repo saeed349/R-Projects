@@ -1,0 +1,448 @@
+---
+title: "QuestionB"
+author: "Saeed Rahman"
+date: "May 13, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1)
+
+Please identify and select a specic sector's SPDR ETF, for example XLF,
+XLE, etc. This site http://finviz.com/ presents details about the tick-
+ers in each sector. In the sector you choose download 20 equity prices
+since 2012. Perform a principal component analysis for these 20 equities.
+Report the number of equities needed to account for 80% of the variability.
+Using the specic PCA's you chose analyze which equities in
+uence the
+most these PCA's.
+
+### Getting the data
+```{r, warning=FALSE}
+library(quantmod)
+getSymbols("XLF",from="2012-01-01")
+
+stockData <- new.env()
+lookup.symb=c("JPM",	"BRK",	"BAC",	"WFC",	"C",	"GS",	"USB",	"CB",	"MS",	"PNC",	"AXP",	"MET",	"AIG",	"SCHW",	"BK",	"BLK",	"PRU",	"CME",	"COF",	"MMC",	"SPGI")
+
+getSymbols(lookup.symb, from="2012-01-01", env=stockData, src="yahoo")
+
+ReturnMatrix=NULL
+
+
+for(i in 1:length(lookup.symb))
+{
+  tmp <- get(lookup.symb[i], pos=stockData)   # get data from stockData environment  
+  ReturnMatrix=cbind(ReturnMatrix,   (Cl(tmp)-Op(tmp)) / Op(tmp)   )
+  colnames(ReturnMatrix)[i]=lookup.symb[i]
+}
+ReturnMatrix=ReturnMatrix[complete.cases(ReturnMatrix),]
+head(ReturnMatrix)
+# cor(ReturnMatrix)
+```
+
+### PCA
+The output of the function PCA() is a list including :
+```{r}
+
+library("FactoMineR")
+
+res.pca <- PCA(ReturnMatrix, graph = FALSE)
+print(res.pca)
+```
+Variances of the principal components:
+The proportion of variation retained by the principal components (PCs) can be extracted as follow :
+```{r}
+eigenvalues <- res.pca$eig
+head(eigenvalues)
+```
+Number of components that best describe 80% of variance
+```{r}
+eigenvalues[eigenvalues["cumulative percentage of variance"]>80,]
+
+```
+```{r}
+Prin.Comp = prcomp(ReturnMatrix, scale = T) #by default R centers the variables. Scale also makes then sd=1
+summary(Prin.Comp)
+propvariance = Prin.Comp$sdev^2/sum(Prin.Comp$sdev^2)
+plot(cumsum(propvariance), type="b")
+number_best_pca= which(cumsum(propvariance)>.8)[1]
+print(paste("Number of Components by which 80% of the variance is captured=",number_best_pca))
+```
+The importance of PCs can be visualized using a scree plot :
+```{r}
+library("factoextra")
+fviz_screeplot(res.pca, ncp=10)
+```
+Plotting the correlations/loadings of the variables with the components
+The correlation between a variable and a PC is called loading. The variables can be plotted as points in the component space using their loadings as coordinates.
+```{r}
+# Coordinates of variables
+head(res.pca$var$coord)
+fviz_pca_var(res.pca)
+```
+
+The squared loadings for variables are 
+```{r}
+head(res.pca$var$cos2)
+```
+
+The sum of the cos2 for variables on the principal components is equal to one.
+
+If a variable is perfectly represented by only two components, the sum of the cos2 is equal to one. In this case the variables will be positioned on the circle of correlations.
+
+For some of the variables, more than 2 components are required to perfectly represent the data. In this case the variables are positioned inside the circle of correlations.
+
+```{r}
+fviz_pca_var(res.pca, col.var="cos2") +
+scale_color_gradient2(low="white", mid="blue", 
+                    high="red", midpoint=0.5) + theme_minimal()
+```
+
+
+
+
+
+Here we can see that no variables are perfectly represented by less than two components
+
+### Contributions of the variables to the principal components:
+Variables that are correlated with PC1 and PC2 are the most important in explaining the variability in the data set.
+
+Variables that does not correlated with any PC or correlated with the last dimensions are variables with low contribution and might be removed to simplify the overall analysis.
+
+#### Contributions of variables on PC1
+```{r}
+fviz_pca_contrib(res.pca, choice = "var", axes = 1)
+```
+
+#### Contributions of variables on PC2
+```{r}
+fviz_pca_contrib(res.pca, choice = "var", axes = 2)
+```
+
+### Total contribution on PC1 and 
+PC2
+```{r}
+
+fviz_pca_contrib(res.pca, choice = "var", axes = 1:2)
+
+```
+
+Now for further analysis in the next questions, we will select C, JPM, BAC, PRU as the top 4 securities.
+
+## 2)
+Next pick 4 equities that are among the most influential in the sector you
+selected in part 1. Please only select equities that trade at $5 or above.
+Now we will identify a stochastic model that best ts the data for each of
+them. We consider the following candidate models for each of them:
+
+### Getting Data
+```{r}
+getSymbols("C",from="2012-01-01")
+getSymbols("JPM",from="2012-01-01")
+getSymbols("BAC",from="2012-01-01")
+getSymbols("PRU",from="2012-01-01")
+stock1=ts(C[,6])
+stock2=ts(JPM[,6])
+stock3=ts(BAC[,6])
+stock4=ts(PRU[,6])
+```
+
+### Defining the SDE's
+```{r, warning=FALSE}
+library(Sim.DiffProc)
+library(Ecdat)
+
+fx <-{}
+gx <-{}
+#model 1 drift and diffusion 
+fx[1] <- expression( theta[1]*x )
+gx[1]<- expression( theta[2]*x )
+
+#model 2 drift and diffusion 
+fx[2] <- expression( theta[1]+theta[2]*x)
+gx[2]<- expression( theta[3]*(x^theta[4]))
+
+#model 3 drift and diffusion 
+fx[3] <- expression( theta[1]*x)
+gx[3]<- expression (theta[2] + ( theta[3]*(x^theta[4])))
+
+#model 4 drift and diffusion 
+fx[4]<- expression( theta[1]*x)
+gx[4] <- expression( theta[2]*(x^(3/2)))
+
+#model 5 drift and diffusion 
+fx[5] <- expression( theta[1]+theta[2]*x )
+gx[5] <- expression(theta[3] + (theta[4]*log(x)) )
+
+pmle=eval(formals(fitsde.default)$pmle)
+
+```
+### Defining the functions to fit the data to the SDE's and the Maximum Likelyhood functions to estimate parameters
+```{r}
+Best.fit<-function(data,pmle)
+{
+  #model1
+  mod1 <- fitsde(data=data,drift=fx[1],diffusion=gx[1],start = 
+                   list(theta1=1, theta2=1),pmle=pmle)
+  #model 2
+  mod2 <- fitsde(data=data,drift=fx[2],diffusion=gx[2],start = 
+                   list(theta1=1, theta2=1,theta3=1,theta4=1),pmle=pmle)
+  #model 3
+  mod3 <- fitsde(data=data,drift=fx[3],diffusion=gx[3],start = 
+                   list(theta1=1, theta2=1,theta3=1,theta4=1),pmle=pmle)
+  #model 4
+  mod4 <- fitsde(data=data,drift=fx[4],diffusion=gx[4],start = 
+                   list(theta1=1, theta2=1),pmle=pmle)
+  #model 5
+  mod5 <- fitsde(data=data,drift=fx[5],diffusion=gx[5],start = 
+                   list(theta1=1, theta2=1,theta3=1, theta4=1),pmle=pmle)
+  #Computes AIC
+  AIC <- c(AIC(mod1),AIC(mod2),AIC(mod3),AIC(mod4),AIC(mod5))
+  Test <- data.frame(AIC,row.names = c("Model 1","Model 2","Model 3", "Model 4","Model 5"))
+  Test
+  # Bestmod <- rownames(Test)[which.min(Test[,1])]
+  Bestmod <- which.min(Test[,1])
+  list('best.model'=Bestmod,'AIC.results'=Test)
+}
+
+
+Diff.mle <-function(fx,gx,data)
+{
+  pmle <- eval(formals(fitsde.default)$pmle)
+  fitres <- lapply(1:4, function(i) fitsde(data=data,drift=fx,diffusion=gx,pmle=pmle[i],
+                                           start = list(theta1=1,theta2=1,theta3=1,theta4=1)))
+  Coef <- data.frame(do.call("cbind",lapply(1:4,function(i) coef(fitres[[i]]))))
+  Info <- data.frame(do.call("rbind",lapply(1:4,function(i) AIC(fitres[[i]]))),
+                     row.names=pmle)
+  names(Coef) <- c(pmle)
+  names(Info) <- c("AIC")
+  list("Info"=Info,"Coef"=Coef)
+}
+
+
+```
+### Fitting the SDE's and estimating the parameters
+```{r,warning=FALSE}
+
+pmle_type=1
+params={}
+
+
+
+### For Stock 1
+print("For Stock Symbol - C")
+fit1=Best.fit(data =stock1,pmle = pmle[pmle_type])
+best_model[1]=fit1$best.model
+print(paste("Best model = model ",best_model[1]))
+
+
+ls1=Diff.mle(fx=fx[best_model[1]],gx=gx[best_model[1]],data = stock1)
+ls1=ls1$Coef[,pmle_type]
+params[1]=list(ls1)
+
+### For Stock 2
+print("For Stock Symbol - JPM")
+fit2=Best.fit(data =stock2,pmle = pmle[pmle_type])
+best_model[2]=fit2$best.model
+print(paste("Best model = model ",best_model[2]))
+
+
+ls2=Diff.mle(fx=fx[best_model[2]],gx=gx[best_model[2]],data = stock2)
+ls2=ls2$Coef[,pmle_type]
+params[2]=list(ls2)
+
+### For Stock 3
+print("For Stock Symbol - BAC")
+fit3=Best.fit(data =stock3,pmle = pmle[pmle_type])
+best_model[3]=fit3$best.model
+print(paste("Best model = model ",best_model[3]))
+
+
+ls3=Diff.mle(fx=fx[best_model[3]],gx=gx[best_model[3]],data = stock3)
+ls3=ls3$Coef[,pmle_type]
+params[3]=list(ls3)
+
+### For Stock 4
+print("For Stock Symbol - PRU")
+fit4=Best.fit(data =stock4,pmle = pmle[pmle_type])
+best_model[4]=fit4$best.model
+print(paste("Best model = model ",best_model[4]))
+
+
+
+ls4=Diff.mle(fx=fx[best_model[4]],gx=gx[best_model[4]],data = stock4)
+ls4=ls4$Coef[,pmle_type]
+params[4]=list(ls4)
+```
+
+
+## 3)
+Estimate the correlation matrix  for the 4 stocks based on historical
+data.
+```{r}
+lookup.symb=c("C","JPM","BAC","PRU","XLF")
+
+getSymbols(lookup.symb, from="2012-01-01", src="yahoo")
+
+ReturnMatrix=NULL
+
+
+for(i in 1:length(lookup.symb))
+{
+  tmp <- get(lookup.symb[i], pos=stockData)   # get data from stockData environment  
+  ReturnMatrix=cbind(ReturnMatrix,   (Cl(tmp)-Op(tmp)) / Op(tmp)   )
+  colnames(ReturnMatrix)[i]=lookup.symb[i]
+}
+cor_matrix=cor(ReturnMatrix[,-5])
+print(cor_matrix)
+```
+## 4)
+
+Using the correlation matrix in the part 3 and the model you selected in
+part 2 generate Monte-Carlo simulations for the 4 stocks. Even though
+the Brownian motions are not exactly correlated with use
+this matrix to generate correlated increments. Use T = 1 year, t = 1
+255
+and n = 1000 paths in your simulation. Once it is done, you only need to
+keep the end value ST for each stock. You should have 4 vectors in total
+each with n replications. Please report basic statistics (mean, standard
+deviation, skewness, and kurtosis) for each stock.
+
+```{r, warning=FALSE}
+chol_upper=chol(cor_matrix)
+
+n_iterations=1000
+n_steps=252
+stocks_sim=matrix(0,n_iterations,4)
+stocks_sim[,1]=stock1[1]
+stocks_sim[,2]=stock2[1]
+stocks_sim[,3]=stock3[1]
+stocks_sim[,4]=stock4[1]
+
+
+dt=1/n_steps
+
+for(i in 1:n_iterations)
+{
+  for(j in 2:n_steps)
+  {
+    w=as.vector(matrix( rnorm(1*4,mean=0,sd=1), 1, 4))
+    cor_w=chol_upper%*%w
+    for(k in 1:4)
+    {
+      
+      theta1=params[[k]][1]
+      theta2=params[[k]][2]
+      theta3=params[[k]][3]
+      theta4=params[[k]][4]
+      s=stocks_sim[i,k]
+      
+      if(best_model[k]==1)
+      {
+        stocks_sim[i,k]=s+(theta1*dt*s)+(theta2*s*w[1])
+      }
+      else if(best_model[k]==2)
+      {
+        stocks_sim[i,k]=s+(theta1+theta2*s)*dt+(theta3*(s^theta4)*w[i])
+      }
+      else if(best_model[k]==3)
+      {
+        stocks_sim[i,k]=s+(theta1*s*dt)+(theta2+(theta3*(s^theta4)*w[i]))
+      }
+      else if(best_model[k]==4)
+      {
+        stocks_sim[i,k]=s+(theta1*s*dt)+(theta2*(s^(3/2))*w[i])
+      }
+      else if(best_model[k]==5)
+      {
+        stocks_sim[i,k]=s+(theta1+theta2*s)*dt+(theta3+theta4*log(s))*s*w[i]
+      }
+    }
+    
+  }
+}
+colnames(stocks_sim) <- c("Stock1", "Stock2","Stock3","Stock4")
+head(stocks_sim)
+
+library(fBasics)
+basicStats(stocks_sim, ci = 0.95)
+
+```
+
+## 5)
+
+Download daily data for the main ETF for the same exact period as before.We will fit a geometric Brownian motion to it: and Get the values for mu and sigma.
+
+
+```{r, warning=FALSE}
+getSymbols("XLF",from="2012-01-01")
+
+etf_price=ts(XLF[,6])
+
+print("The parameter estimates are:")
+ls_etf=Diff.mle(fx=fx[1],gx=gx[1],data = etf_price)
+ls_etf=ls_etf$Coef[,pmle_type]
+print(paste("mu=",round(ls_etf[1],6),"sigma=",round(ls_etf[2],4)))
+
+```
+
+
+## 6)
+Run a multivariate regression using the historical data. The response
+is the ETF return and the predictors are the 4 stocks you chose earlier.
+Please record the regression coecients. These are going to be the weights
+for the basket option we will price next.
+```{r}
+xlf_returns=periodReturn(XLF,
+             period='daily',
+             subset=NULL,
+             type='arithmetic',
+             leading=TRUE)
+
+
+regressor=lm(formula=xlf_returns~.,
+             data=ReturnMatrix)
+
+summary(regressor)
+
+coeff=regressor$coefficients
+```
+
+## 7)
+We will price a nonstandard contract next.
+
+```{r}
+exotic1={}
+exotic2={}
+etf_price=coredata(tail(XLF[,6],n=1));
+for(i in 1:1000)
+  exotic1[i]=((stocks_sim[i,1]*coeff[1])+(stocks_sim[i,2]*coeff[2])+(stocks_sim[i,3]*coeff[3])+(stocks_sim[i,4]*coeff[4]))
+            -etf_price
+  exotic1[i]=max(exotic1[i],0)
+  
+  exotic2[i]=etf_price-((stocks_sim[i,1]*coeff[1])+(stocks_sim[i,2]*coeff[2])+(stocks_sim[i,3]*coeff[3])+
+                          (stocks_sim[i,4]*coeff[4]))
+            
+  exotic2[i]=max(exotic1[i],0)
+
+print(paste("Option Price Today=",mean(exotic[i])))
+
+print(paste("Option Price Today if the buyer exchanged has the option to exchanfe etf for weighted average of stocks=",mean(exotic2[i])))
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
